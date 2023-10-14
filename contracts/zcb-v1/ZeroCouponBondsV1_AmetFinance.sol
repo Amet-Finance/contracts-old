@@ -62,6 +62,11 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         _;
     }
 
+    modifier notZeroAddress(address _address) {
+        require(_address != address(0), "Address can not be Zero");
+        _;
+    }
+
     event ChangeOwner(address oldAddress, address newAddress);
     event ChangeVaultAddress(address oldAddress, address newAddress);
 
@@ -266,7 +271,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         }
     }
 
-    function _safeTransfersafeTransfer(address from, address to, uint256 tokenId) internal {
+    function _safeTransfer(address from, address to, uint256 tokenId) internal {
         _safeTransfer(from, to, tokenId, "");
     }
 
@@ -335,7 +340,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
 
     //    ==== VAULT owner functions ====
 
-    function changeVaultAddress(address newAddress) external onlyVaultOwner {
+    function changeVaultAddress(address newAddress) external onlyVaultOwner notZeroAddress(newAddress) {
         emit ChangeVaultAddress(AMET_VAULT, newAddress);
         AMET_VAULT = newAddress;
     }
@@ -358,7 +363,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
 
     // ==== Issuer functions ====
 
-    function changeOwner(address _newAddress) external onlyIssuer {
+    function changeOwner(address _newAddress) external onlyIssuer notZeroAddress(_newAddress) {
         issuer = _newAddress;
         emit ChangeOwner(msg.sender, _newAddress);
     }
@@ -388,7 +393,6 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
 
     function purchase(uint256 count) external {
         require(purchased + count <= total, "Can not mint more then is left");
-
 
         for (uint256 index = 0; index < count; index++) {
             uint256 id = purchased + index;
