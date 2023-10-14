@@ -376,8 +376,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
     function purchase(uint256 count) external {
         require(purchased + count <= total, "Can not mint more then is left");
 
-        bool isPurchased = IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
-        require(isPurchased == true, "Purchase reverted");
+        IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
 
         for (uint256 index = 0; index < count; index++) {
             uint256 id = purchased + index;
