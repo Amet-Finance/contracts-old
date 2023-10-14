@@ -2,3 +2,4 @@ node_modules
 .idea
 artifacts
 cache
+.DS_Store
