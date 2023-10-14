@@ -406,7 +406,8 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
 
     function redeem(uint256[] calldata ids) external {
         uint256 totalRedemption = interestTokenAmount * ids.length;
-        uint256 contractInterestBalance = IERC20(interestToken).balanceOf(address(this));
+        IERC20 interest = IERC20(interestToken);
+        uint256 contractInterestBalance = interest.balanceOf(address(this));
         require(contractInterestBalance >= totalRedemption, "Not enough interest token");
 
         for (uint256 index = 0; index < ids.length; index++) {
@@ -424,8 +425,8 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         uint256 totalFees = totalRedemption * feePercentage / 1000;
 
         redeemed += ids.length;
-        IERC20(interestToken).safeTransfer(AMET_VAULT, totalFees);
-        IERC20(interestToken).safeTransfer(msg.sender, totalRedemption - totalFees);
+        interest.safeTransfer(AMET_VAULT, totalFees);
+        interest.safeTransfer(msg.sender, totalRedemption - totalFees);
     }
 
     // ========

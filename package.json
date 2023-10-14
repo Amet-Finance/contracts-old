@@ -7,13 +7,16 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile-zcb-abi": "solcjs -o contracts/zcb-v1/artefacts/abi --abi --include-path node_modules/ --base-path . contracts/zcb-v1/ZeroCouponBondsV1_AmetFinance.sol",
+    "compile-zcb-issuer-abi": "solcjs -o contracts/zcb-v1/artefacts/abi --abi --include-path node_modules/ --base-path . contracts/zcb-v1/ZeroCouponBondsIssuerV1_AmetFinance.sol"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",
     "jest": "^29.7.0",
+    "solc": "^0.8.21",
     "web3": "^1.10.0"
   }
 }
