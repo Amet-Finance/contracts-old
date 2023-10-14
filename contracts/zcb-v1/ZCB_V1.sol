@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+// Vulnerabilities
+// 1. Add pause with VAULT address - CENTRALIZATION
+// 2. Add selfdestruct with VAULT address - CENTRALIZATION
+
 pragma solidity ^0.8.7;
 
 import {IERC20} from "./IERC20.sol";
@@ -324,6 +328,19 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         AMET_VAULT = newAddress;
     }
 
+    function changeFeePercentage(uint16 percentage) external onlyVaultOwner {
+        feePercentage = percentage;
+    }
+
+    function changeTokenURI(string memory uri) external onlyVaultOwner {
+        _uri = uri;
+    }
+
+    function destroyContract() external onlyVaultOwner {
+//        IERC20(interestToken).transfer(AMET_VAULT, )
+//        selfdestruct(payable(AMET_VAULT));
+    }
+
     // ==================
 
     // ==== Issuer functions ====
@@ -356,7 +373,8 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
     function purchase(uint256 count) external {
         require(purchased + count <= total, "Can not mint more then is left");
 
-        IERC20(investmentToken).transferFrom(msg.sender, issuer, count * investmentTokenAmount);
+        bool isPurchased = IERC20(investmentToken).transferFrom(msg.sender, issuer, count * investmentTokenAmount);
+        require(isPurchased == true, "Purchase reverted");
 
         for (uint256 index = 0; index < count; index++) {
             uint256 id = purchased + index;
@@ -369,7 +387,8 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
 
     function redeem(uint256[] calldata ids) external {
         uint256 totalRedemption = interestTokenAmount * ids.length;
-        require(IERC20(interestToken).balanceOf(address(this)) >= totalRedemption, "Not enough interest token");
+        uint256 contractInterestBalance = IERC20(interestToken).balanceOf(address(this));
+        require(contractInterestBalance >= totalRedemption, "Not enough interest token");
 
         for (uint256 index = 0; index < ids.length; index++) {
             uint256 id = ids[index];

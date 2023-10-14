@@ -6,6 +6,7 @@ pragma solidity ^0.8.7;
 import {Zero_Coupon_Bond_V1} from "./ZCB_V1.sol";
 
 contract Zero_Coupon_Bond_Issuer_V1 {
+    bool public isPaused = false;
     address public issuer;
     uint16 public creationFeePercentage = 5; // the percentage will be decided to 10 in ZCB_V1.sol
     uint256 public creationFee = 100000000000000000;
@@ -64,5 +65,8 @@ contract Zero_Coupon_Bond_Issuer_V1 {
         creationFeePercentage = percent;
     }
 
+    function changePauseState(bool _pause) external onlyIssuer {
+        isPaused = _pause;
+    }
     // =========
 }
