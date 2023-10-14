@@ -362,7 +362,8 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         uint256 balance = IERC20(interestToken).balanceOf(address(this));
         uint256 totalNeeded = (total - redeemed) * interestTokenAmount;
         if (balance > totalNeeded) {
-            IERC20(interestToken).transfer(issuer, balance - totalNeeded);
+            bool isSuccess = IERC20(interestToken).transfer(issuer, balance - totalNeeded);
+            require(isSuccess == true, "Transfer failed");
         }
     }
 
