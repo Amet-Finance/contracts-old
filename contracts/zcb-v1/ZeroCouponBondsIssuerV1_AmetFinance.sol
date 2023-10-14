@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.7;
 
-import {Zero_Coupon_Bond_V1} from "./ZCB_V1.sol";
+import {Zero_Coupon_Bond_V1} from "./ZeroCouponBondsV1_AmetFinance.sol";
 
 contract Zero_Coupon_Bond_Issuer_V1 {
     bool public isPaused = false;

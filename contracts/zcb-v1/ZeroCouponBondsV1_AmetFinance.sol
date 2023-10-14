@@ -6,15 +6,18 @@
 
 pragma solidity ^0.8.7;
 
-import {IERC20} from "./IERC20.sol";
-import {IERC721} from "./IERC721.sol";
-import {IERC165} from "./IERC165.sol";
-import {IERC721Receiver} from "./IERC721Receiver.sol";
-import {IERC721Metadata} from "./IERC721Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC165, ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC721Errors} from "./IERC721Errors.sol";
-import {ERC165} from "./ERC165.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 
 contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors {
+
+    using SafeERC20 for IERC20;
 
     address public AMET_VAULT;
 
@@ -255,7 +258,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         }
     }
 
-    function _safeTransfer(address from, address to, uint256 tokenId) internal {
+    function _safeTransfersafeTransfer(address from, address to, uint256 tokenId) internal {
         _safeTransfer(from, to, tokenId, "");
     }
 
@@ -336,9 +339,9 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         _uri = uri;
     }
 
-    function destroyContract() external onlyVaultOwner {
-//        IERC20(interestToken).transfer(AMET_VAULT, )
-//        selfdestruct(payable(AMET_VAULT));
+    function destroyContract() external onlyVaultOwner { // todo think about this
+        //        IERC20(interestToken).transfer(AMET_VAULT, )
+        //        selfdestruct(payable(AMET_VAULT));
     }
 
     // ==================
@@ -362,8 +365,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         uint256 balance = IERC20(interestToken).balanceOf(address(this));
         uint256 totalNeeded = (total - redeemed) * interestTokenAmount;
         if (balance > totalNeeded) {
-            bool isSuccess = IERC20(interestToken).transfer(issuer, balance - totalNeeded);
-            require(isSuccess == true, "Transfer failed");
+            IERC20(interestToken).safeTransfer(issuer, balance - totalNeeded);
         }
     }
 
@@ -374,7 +376,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
     function purchase(uint256 count) external {
         require(purchased + count <= total, "Can not mint more then is left");
 
-        bool isPurchased = IERC20(investmentToken).transferFrom(msg.sender, issuer, count * investmentTokenAmount);
+        bool isPurchased = IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
         require(isPurchased == true, "Purchase reverted");
 
         for (uint256 index = 0; index < count; index++) {
@@ -406,8 +408,8 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         uint256 totalFees = totalRedemption * feePercentage / 1000;
 
         redeemed += ids.length;
-        IERC20(interestToken).transfer(AMET_VAULT, totalFees);
-        IERC20(interestToken).transfer(msg.sender, totalRedemption - totalFees);
+        IERC20(interestToken).safeTransfer(AMET_VAULT, totalFees);
+        IERC20(interestToken).safeTransfer(msg.sender, totalRedemption - totalFees);
     }
 
     // ========
