@@ -62,6 +62,14 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         _;
     }
 
+    event ChangeOwner(address oldAddress, address newAddress);
+    event ChangeVaultAddress(address oldAddress, address newAddress);
+
+    event ChangeFeePercentage(uint16 oldFeePercentage, uint16 newFeePercentage);
+
+    event BondsIssued(uint256 count);
+    event BondsBurnt(uint256 count);
+
     constructor(
         address _issuer,
         uint256 _total,
@@ -328,10 +336,12 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
     //    ==== VAULT owner functions ====
 
     function changeVaultAddress(address newAddress) external onlyVaultOwner {
+        emit ChangeVaultAddress(AMET_VAULT, newAddress);
         AMET_VAULT = newAddress;
     }
 
     function changeFeePercentage(uint16 percentage) external onlyVaultOwner {
+        emit ChangeFeePercentage(feePercentage, percentage);
         feePercentage = percentage;
     }
 
@@ -350,15 +360,18 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
 
     function changeOwner(address _newAddress) external onlyIssuer {
         issuer = _newAddress;
+        emit ChangeOwner(msg.sender, _newAddress);
     }
 
     function issueBonds(uint256 count) external onlyIssuer {
         total += count;
+        emit BondsIssued(count);
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
         require(total - count >= purchased, "Can not burn already sold bonds");
         total -= count;
+        emit BondsBurnt(count);
     }
 
     function withdrawRemaining() external onlyIssuer {
@@ -376,7 +389,6 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
     function purchase(uint256 count) external {
         require(purchased + count <= total, "Can not mint more then is left");
 
-        IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
 
         for (uint256 index = 0; index < count; index++) {
             uint256 id = purchased + index;
@@ -385,6 +397,7 @@ contract Zero_Coupon_Bond_V1 is ERC165, IERC721, IERC721Metadata, IERC721Errors 
         }
 
         purchased += count;
+        IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
     }
 
     function redeem(uint256[] calldata ids) external {
