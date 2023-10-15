@@ -15,7 +15,6 @@
     "compile-zcb-v2-issuer-abi": "solcjs -o contracts/zcb-v2/artefacts/zcb-issuer/abi --abi --include-path node_modules/ --base-path . contracts/zcb-v2/ZeroCouponBondsIssuerV1_AmetFinance.sol",
     "compile-zcb-v2-issuer-bin": "solcjs -o contracts/zcb-v2/artefacts/zcb-issuer/bin --bin --include-path node_modules/ --base-path . contracts/zcb-v2/ZeroCouponBondsIssuerV1_AmetFinance.sol",
     "compile-zcb-v2": "npm run compile-zcb-v2-issuer-abi && npm run compile-zcb-v2-issuer-bin",
-
     "test-issuer-v2-custom": "npm run compile-zcb-v2 && jest --runInBand",
     "prepare": "husky install"
   },
@@ -29,6 +28,7 @@
     "web3": "^1.10.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "husky": "^8.0.0"
   }
 }

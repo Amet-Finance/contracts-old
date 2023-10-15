@@ -1,11 +1,12 @@
 const Web3 = require("web3");
+const {describe, test, expect, beforeAll} = require("@jest/globals")
 
 const ganache = require('../scripts/ganache');
 const {deploy} = require("../scripts/deploy");
 
 const constants = {
     changedFee: "1000000000000000000",
-    changedFeePercentage: 100 // decimals 2
+    changedFeePercentage: "100" // decimals 2
 }
 
 
@@ -22,6 +23,21 @@ function getContract() {
     const web3 = getWeb3()
 
     return new web3.eth.Contract(constants.Issuer_ABI, constants.IssuerContract);
+}
+
+async function submitTransaction({data, privateKey}) {
+    const web3 = getWeb3();
+    const account = web3.eth.accounts.privateKeyToAccount(privateKey);
+
+    const tx = {
+        to: constants.IssuerContract,
+        from: account.address,
+        data
+    }
+
+    tx.gas = await web3.eth.estimateGas(tx);
+    const transactionSigned = await account.signTransaction(tx);
+    return await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction);
 }
 
 describe("Testing the issuer contract", () => {
@@ -52,22 +68,12 @@ describe("Testing the issuer contract", () => {
     test('changeCreationFee| Wrong wallet', async () => {
         let hasError = false;
         try {
-            const web3 = getWeb3();
             const contract = getContract();
-            const account = web3.eth.accounts.privateKeyToAccount(constants.RandomPK1);
-
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeCreationFee(constants.changedFee).encodeABI()
-            }
-
-            tx.gas = await web3.eth.estimateGas(tx);
-
-
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
-
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeCreationFee(constants.changedFee).encodeABI(),
+                privateKey: constants.RandomPK1
+            })
+            console.log(txDetails)
         } catch (error) {
             hasError = true
         }
@@ -78,21 +84,11 @@ describe("Testing the issuer contract", () => {
     test('changeCreationFee| Correct wallet', async () => {
         let hasError = false;
         try {
-            const web3 = getWeb3();
             const contract = getContract();
-
-            const account = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
-
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeCreationFee(constants.changedFee).encodeABI()
-            }
-
-            tx.gas = await web3.eth.estimateGas(tx);
-
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeCreationFee(constants.changedFee).encodeABI(),
+                privateKey: constants.OwnerPK
+            })
             console.log(txDetails)
         } catch (error) {
             hasError = true
@@ -104,22 +100,12 @@ describe("Testing the issuer contract", () => {
     test('changeCreationFeePercentage| Wrong wallet', async () => {
         let hasError = false;
         try {
-            const web3 = getWeb3();
             const contract = getContract();
-            const account = web3.eth.accounts.privateKeyToAccount(constants.RandomPK1);
-
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeCreationFeePercentage(constants.changedFeePercentage).encodeABI()
-            }
-
-            tx.gas = await web3.eth.estimateGas(tx);
-
-
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
-
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeCreationFeePercentage(constants.changedFeePercentage).encodeABI(),
+                privateKey: constants.RandomPK1
+            })
+            console.log(txDetails)
         } catch (error) {
             hasError = true
         }
@@ -130,22 +116,11 @@ describe("Testing the issuer contract", () => {
     test('changeCreationFeePercentage| Correct wallet', async () => {
         let hasError = false;
         try {
-            const web3 = getWeb3();
             const contract = getContract();
-            const account = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
-
-            // constants.changedFeePercentage
-
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeCreationFeePercentage(constants.changedFeePercentage).encodeABI()
-            }
-
-            tx.gas = await web3.eth.estimateGas(tx);
-
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeCreationFeePercentage(constants.changedFeePercentage).encodeABI(),
+                privateKey: constants.OwnerPK
+            })
             console.log(txDetails)
         } catch (error) {
             hasError = true
@@ -157,22 +132,12 @@ describe("Testing the issuer contract", () => {
     test('changeIssuer| Wrong wallet', async () => {
         let hasError = false;
         try {
-            const web3 = getWeb3();
             const contract = getContract();
-            const account = web3.eth.accounts.privateKeyToAccount(constants.RandomPK1);
-
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeIssuer(account.address).encodeABI()
-            }
-
-            tx.gas = await web3.eth.estimateGas(tx);
-
-
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
-
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeIssuer(account.address).encodeABI(),
+                privateKey: constants.RandomPK1
+            })
+            console.log(txDetails)
         } catch (error) {
             hasError = true
         }
@@ -185,20 +150,12 @@ describe("Testing the issuer contract", () => {
         try {
             const web3 = getWeb3();
             const contract = getContract();
-
-            const account = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
             const newAccount = web3.eth.accounts.privateKeyToAccount(constants.RandomPK1);
 
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeIssuer(newAccount.address).encodeABI()
-            }
-
-            tx.gas = await web3.eth.estimateGas(tx);
-
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeIssuer(newAccount.address).encodeABI(),
+                privateKey: constants.OwnerPK
+            })
             console.log(txDetails)
         } catch (error) {
             hasError = true
@@ -212,21 +169,44 @@ describe("Testing the issuer contract", () => {
         try {
             const web3 = getWeb3();
             const contract = getContract();
-
-            const account = web3.eth.accounts.privateKeyToAccount(constants.RandomPK1);
             const newAccount = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
 
-            const tx = {
-                to: constants.IssuerContract,
-                from: account.address,
-                data: contract.methods.changeIssuer(newAccount.address).encodeABI()
+            const txDetails = await submitTransaction({
+                data: contract.methods.changeIssuer(newAccount.address).encodeABI(),
+                privateKey: constants.RandomPK1
+            })
+            console.log(txDetails)
+        } catch (error) {
+            hasError = true
+        }
+
+        expect(hasError).toBe(false);
+    })
+
+    test('Variable validation', async () => {
+        let hasError = false;
+        try {
+            const web3 = getWeb3();
+            const contract = getContract();
+
+            const owner = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK)
+
+            const issuer = await contract.methods.issuer().call()
+            const creationFeePercentage = await contract.methods.creationFeePercentage().call()
+            const creationFee = await contract.methods.creationFee().call()
+
+            if (issuer.toLowerCase() !== owner.address.toLowerCase()) {
+                hasError = true
             }
 
-            tx.gas = await web3.eth.estimateGas(tx);
+            if (creationFeePercentage !== constants.changedFeePercentage) {
+                hasError = true
+            }
 
-            const transactionSigned = await account.signTransaction(tx);
-            const txDetails = await web3.eth.sendSignedTransaction(transactionSigned.rawTransaction)
-            console.log(txDetails)
+            if (creationFee !== constants.changedFee) {
+                hasError = true
+            }
+
         } catch (error) {
             hasError = true
         }
@@ -252,37 +232,6 @@ describe("Testing the issuer contract", () => {
 
     test('isPaused| Pause and Check', async () => {
         expect(true).toBe(true)
-    })
-
-    test('Validate The Tests', async () => {
-        let hasError = false;
-        try {
-            const web3 = getWeb3();
-            const contract = getContract();
-
-            const owner = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK)
-
-            const issuer = await contract.methods.issuer().call()
-            const creationFeePercentage = await contract.methods.creationFeePercentage().call()
-            const creationFee = await contract.methods.creationFee().call()
-
-            if (issuer.toLowerCase() !== owner.address.toLowerCase()) {
-                throw ""
-            }
-
-            if (creationFeePercentage != constants.changedFeePercentage) {
-                throw ""
-            }
-
-            if (creationFee != constants.changedFee) {
-                throw ""
-            }
-
-        } catch (error) {
-            hasError = true
-        }
-
-        expect(hasError).toBe(false);
     })
 })
 
