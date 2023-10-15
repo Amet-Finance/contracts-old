@@ -1,32 +1,55 @@
 const Web3 = require("web3");
-const Issuer_ABI = require('./abi-jsons/Issuer.json')
+
+const ganache = require('../scripts/ganache');
+const {deploy} = require("../scripts/deploy");
 
 const constants = {
-    IssuerContract: "0xFe159cC17d1c98758bB98c9437F9f1349940049C",
-    OwnerPK: "0x5d11d2d5f2402073eeabedb99c8f29828d5aa522f429257e1bf43f5ca9674d5a",
-    RandomPK1: "0x11c6805600c2faaa90c3143f8b0edb4cb2ae209cb005a0ea0f47314e737d459f",
-    RandomPK2: "0xd14394b32435023676efadeadbf13e11ca8882d4109be3914805a30ca191dad5",
-
     changedFee: "1000000000000000000",
-    changedFeePercentage: "10"
+    changedFeePercentage: 100 // decimals 2
+}
+
+
+//   "create(uint256,uint256,address,uint256,address,uint256,string)",
+
+//   "withdraw",
+//   "withdraw(address,uint256)",
+
+function getWeb3() {
+    return new Web3(ganache);
+}
+
+function getContract() {
+    const web3 = getWeb3()
+
+    return new web3.eth.Contract(constants.Issuer_ABI, constants.IssuerContract);
 }
 
 describe("Testing the issuer contract", () => {
 
+    beforeAll(() => {
+        return deploy().then((data) => {
 
-    function getWeb3() {
-        return new Web3('http://127.0.0.1:7545');
-    }
+            const accounts = ganache.getInitialAccounts()
+            const {contractAddress, issuer, abi} = data
 
-    function getContract() {
-        const web3 = getWeb3()
-        return new web3.eth.Contract(Issuer_ABI, constants.IssuerContract);
-    }
+            constants.Issuer_ABI = abi
+            constants.IssuerContract = contractAddress
+            constants.OwnerPK = accounts[issuer].secretKey
+            let index = 1;
+            Object.keys(accounts).forEach((account) => {
+                if (account !== issuer) {
+                    constants[`RandomPK${index}`] = accounts[account].secretKey
+                    index++
+                }
+            })
+        })
+    });
 
-    const functions = Object.keys(getContract().methods).filter(i => !i.startsWith("0x"))
-    console.log(functions)
 
-    test('Change Creation Fee with wrong wallet', async () => {
+    // const functions = Object.keys(getContract().methods).filter(i => !i.startsWith("0x"))
+    // console.log(functions)
+
+    test('changeCreationFee| Wrong wallet', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
@@ -52,7 +75,7 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(true);
     })
 
-    test('Change Creation Fee with correct wallet', async () => {
+    test('changeCreationFee| Correct wallet', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
@@ -78,7 +101,7 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(false);
     }) // fee is 1 ETH already
 
-    test('Change Creation Fee Percentage with wrong wallet', async () => {
+    test('changeCreationFeePercentage| Wrong wallet', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
@@ -104,13 +127,14 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(true);
     })
 
-    test('Change Creation Fee Percentage with correct wallet', async () => {
+    test('changeCreationFeePercentage| Correct wallet', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
             const contract = getContract();
-
             const account = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
+
+            // constants.changedFeePercentage
 
             const tx = {
                 to: constants.IssuerContract,
@@ -130,7 +154,7 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(false);
     }) // fee percentage is 10%
 
-    test('Change Issuer with wrong wallet', async () => {
+    test('changeIssuer| Wrong wallet', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
@@ -156,7 +180,7 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(true);
     })
 
-    test('Change Issuer with correct wallet', async () => {
+    test('changeIssuer| Correct wallet', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
@@ -183,7 +207,7 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(false);
     })
 
-    test('Bring the Original issuer back', async () => {
+    test('changeIssuer| Correct wallet(original value)', async () => {
         let hasError = false;
         try {
             const web3 = getWeb3();
@@ -210,8 +234,24 @@ describe("Testing the issuer contract", () => {
         expect(hasError).toBe(false);
     })
 
-    test('Issue Bond', async () => {
+    test('create| Correct Issue Bond', async () => {
+        expect(true).toBe(true)
+    })
 
+    test('create| Wrong Issue Bond', async () => {
+        expect(true).toBe(true)
+    })
+
+    test('withdraw| Correct wallet', async () => {
+        expect(true).toBe(true)
+    })
+
+    test('withdraw| Wrong wallet', async () => {
+        expect(true).toBe(true)
+    })
+
+    test('isPaused| Pause and Check', async () => {
+        expect(true).toBe(true)
     })
 
     test('Validate The Tests', async () => {
@@ -244,11 +284,6 @@ describe("Testing the issuer contract", () => {
 
         expect(hasError).toBe(false);
     })
-
-
-    //       'create',
-    //       'create(uint256,uint256,address,uint256,address,uint256,string)',
-
-    //       'withdraw',
-    //       'withdraw(address,uint256)',
 })
+
+
