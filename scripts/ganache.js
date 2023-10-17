@@ -1,6 +1,5 @@
 const ganache = require('ganache')
 
-const options = {};
-const provider = ganache.provider(options);
+const provider = ganache.provider({});
 
 module.exports = provider

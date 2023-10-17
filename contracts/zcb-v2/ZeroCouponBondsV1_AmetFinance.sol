@@ -105,11 +105,6 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
         _uri = uri;
     }
 
-    function destroyContract() external onlyVaultOwner { // todo think about this
-        //        IERC20(interestToken).transfer(AMET_VAULT, )
-        //        selfdestruct(payable(AMET_VAULT));
-    }
-
     // ==================
 
     // ==== Issuer functions ====
