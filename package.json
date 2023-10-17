@@ -1,6 +1,6 @@
 {
   "name": "contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Amet Finance contracts",
   "main": "index.js",
   "directories": {
@@ -8,19 +8,14 @@
   },
   "scripts": {
     "test": "npm run compile-zcb-v2 && npm run compile-tokens && jest --runInBand",
-
     "compile-zcb-v2-abi": "solcjs -o contracts/zcb-v2/artefacts/zcb/abi --abi --include-path node_modules/ --base-path . contracts/zcb-v2/ZeroCouponBondsV1_AmetFinance.sol",
     "compile-zcb-v2-bin": "solcjs -o contracts/zcb-v2/artefacts/zcb/bin --bin --include-path node_modules/ --base-path . contracts/zcb-v2/ZeroCouponBondsV1_AmetFinance.sol",
-
     "compile-zcb-v2-issuer-abi": "solcjs -o contracts/zcb-v2/artefacts/zcb-issuer/abi --abi --include-path node_modules/ --base-path . contracts/zcb-v2/ZeroCouponBondsIssuerV1_AmetFinance.sol",
     "compile-zcb-v2-issuer-bin": "solcjs -o contracts/zcb-v2/artefacts/zcb-issuer/bin --bin --include-path node_modules/ --base-path . contracts/zcb-v2/ZeroCouponBondsIssuerV1_AmetFinance.sol",
     "compile-zcb-v2": "npm run compile-zcb-v2-issuer-abi && npm run compile-zcb-v2-issuer-bin",
-
     "compile-USDT": "solcjs -o contracts/tokens/artefacts/USDT/abi --abi --include-path node_modules/ --base-path . contracts/tokens/USDT.sol && solcjs -o contracts/tokens/artefacts/USDT/bin --bin --include-path node_modules/ --base-path . contracts/tokens/USDT.sol",
     "compile-USDC": "solcjs -o contracts/tokens/artefacts/USDC/abi --abi --include-path node_modules/ --base-path . contracts/tokens/USDC.sol && solcjs -o contracts/tokens/artefacts/USDC/bin --bin --include-path node_modules/ --base-path . contracts/tokens/USDC.sol",
     "compile-tokens": "npm run compile-USDT && npm run compile-USDC",
-
-
     "prepare": "husky install"
   },
   "author": "",
