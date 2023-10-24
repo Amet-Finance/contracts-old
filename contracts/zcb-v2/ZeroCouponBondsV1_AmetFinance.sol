@@ -160,9 +160,7 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
             uint256 id = ids[index];
 
             require(ownerOf(id) == msg.sender, "Only owner of the bond");
-            uint256 purchaseDate = _tokenInfo[id];
-
-            require(purchaseDate + redeemLockPeriod < block.timestamp, "You can not redeem now");
+            require(_tokenInfo[id] + redeemLockPeriod < block.timestamp, "You can not redeem now");
             _burn(id);
 
             delete _owners[id];
