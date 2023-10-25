@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ZeroCouponBondsV1_AmetFinance is ERC721 {
+
     using SafeERC20 for IERC20;
 
-    error InvalidOwner();
-    error InvalidVAULTOwner();
-    error IsZeroAddress();
-    error InvalidOperation();
-    error MissingInterest();
+    enum InvalidOperationsList{OWNER, VALUT_OWNER, ZERO_ADDRESS, MISSING_INTEREST, COUNT, DATE}
+    error InvalidOperation(InvalidOperationsList opType);
 
     address public AMET_VAULT;
     string private _uri = "https://storage.amet.finance/contracts/zero-coupon-bond-v1.json";
@@ -33,33 +31,25 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     address private interestToken; // Bond return token
     uint256 private interestTokenAmount; // Bond return amount
 
-    mapping(address owner => uint256) private _balances; // Address bonds total
-
-    mapping(uint256 tokenId => address) private _owners; // Bond owner
-
-    mapping(uint256 tokenId => uint256) private _tokenInfo; // Bond purchase date
-
-    mapping(uint256 tokenId => address) private _tokenApprovals; // approval for tokenId
-
-    mapping(address owner => mapping(address operator => bool)) private _operatorApprovals; // approval for all the bonds
+    mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
     modifier onlyIssuer() {
         if (msg.sender != issuer) {
-            revert InvalidOwner();
+            revert InvalidOperation(InvalidOperationsList.OWNER);
         }
         _;
     }
 
     modifier onlyVaultOwner() {
         if (msg.sender != AMET_VAULT) {
-            revert InvalidVAULTOwner();
+            revert InvalidOperation(InvalidOperationsList.VALUT_OWNER);
         }
         _;
     }
 
     modifier notZeroAddress(address _address) {
         if (msg.sender == address(0)) {
-            revert IsZeroAddress();
+            revert InvalidOperation(InvalidOperationsList.ZERO_ADDRESS);
         }
         _;
     }
@@ -133,7 +123,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
         if (total - count < purchased) {
-            revert InvalidOperation();
+            revert InvalidOperation(InvalidOperationsList.COUNT);
         }
 
         total -= count;
@@ -154,13 +144,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     function purchase(uint256 count) external {
         if (purchased + count > total) {
-            revert InvalidOperation();
+            revert InvalidOperation(InvalidOperationsList.COUNT);
         }
 
         for (uint256 index = 0; index < count; index++) {
-            uint256 id = purchased + index;
-            _safeMint(msg.sender, id);
-            _tokenInfo[id] = block.timestamp;
+            uint256 tokenId = purchased + index;
+            _safeMint(msg.sender, tokenId);
+            _purchaseDates[tokenId] = block.timestamp;
         }
 
         purchased += count;
@@ -168,38 +158,35 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function redeem(uint256[] calldata ids) external {
-        uint256 totalRedemption = interestTokenAmount * ids.length;
+        uint256 length = ids.length;
+        uint256 totalRedemption = interestTokenAmount * length;
+        uint256 redeemLeft = block.timestamp - redeemLockPeriod;
+
         IERC20 interest = IERC20(interestToken);
         uint256 contractInterestBalance = interest.balanceOf(address(this));
-        if (contractInterestBalance < totalRedemption) {
-            revert MissingInterest();
+
+        if (totalRedemption > contractInterestBalance) {
+            revert InvalidOperation(InvalidOperationsList.MISSING_INTEREST);
         }
 
-        uint256 length = ids.length;
+        for (uint256 index = 0; index < length; index++) {
+            uint256 tokenId = ids[index];
 
-        for (uint256 index = 0; index < length;) {
-            unchecked {
-                index++;
-            }
-            uint256 id = ids[index];
-
-            if (ownerOf(id) != msg.sender) {
-                revert InvalidOwner();
+            if (ownerOf(tokenId) != msg.sender) {
+                revert InvalidOperation(InvalidOperationsList.OWNER);
             }
 
-            if (_tokenInfo[id] + redeemLockPeriod >= block.timestamp) {
-                revert InvalidOperation();
+            if (_purchaseDates[tokenId] >= redeemLeft) {
+                revert InvalidOperation(InvalidOperationsList.DATE);
             }
-            _burn(id);
 
-            delete _owners[id];
+            _burn(tokenId);
+            delete _purchaseDates[tokenId];
         }
 
         uint256 totalFees = totalRedemption * feePercentage / 1000;
+        redeemed += length;
 
-        unchecked {
-            redeemed += ids.length;
-        }
         interest.safeTransfer(AMET_VAULT, totalFees);
         interest.safeTransfer(msg.sender, totalRedemption - totalFees);
     }
@@ -241,15 +228,23 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function getTokenInfo(uint256 tokenId) external view returns (address, uint256) {
-        return (_owners[tokenId], _tokenInfo[tokenId]);
+        return (_ownerOf(tokenId), _purchaseDates[tokenId]);
     }
 
     function getTokensPurchaseDates(uint256[] calldata tokenIds) external view returns (uint256[] memory) {
         uint256[] memory purchaseDates = new uint256[](tokenIds.length);
 
         for (uint256 id = 0; id < tokenIds.length; id += 1) {
-            purchaseDates[id] = _tokenInfo[tokenIds[id]];
+            purchaseDates[id] = _purchaseDates[tokenIds[id]];
         }
         return purchaseDates;
     }
 }
+
+//@audit Use custom errors instead of require statements - done
+//@audit import files with {}
+//@audit missing event emission on setter functions
+//@audit use stable pragma statement
+//@audit Filename and contract name mismatch - done
+//@audit use ++index instead of index++, as well as don't initialise index to 0
+//@audit include NatSpec especially for the external functions

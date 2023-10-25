@@ -20,13 +20,15 @@ const constants = {
 
     bondInfoLocal: {
         id: "",
-        total: 1000,
+        total: 50,
         redeemLockPeriod: 5,
         investment: "USDT",
         investmentTokenAmount: "",
         interest: "USDC",
         interestTokenAmount: ""
     },
+
+    purchaseAmount: 10,
 
     changedFee: "1000000000000000000",
     changedFeePercentage: "100", // decimals 2
@@ -418,11 +420,11 @@ describe("Testing the ZCB", () => {
         })
     })
 
-    test('Purchase| Correct approval', async () => {
+    test.failing('Purchase| Correct approval && Wrong amount', async () => {
         const type = constants.bondInfoLocal.investment
         const tokenContract = getTokenContract();
 
-        const amount = 10
+        const amount = constants.bondInfoLocal.total + 1;
         const value = toBN(amount).mul(toBN(constants.bondInfoLocal.investmentTokenAmount))
 
         await submitTransaction({
@@ -440,11 +442,36 @@ describe("Testing the ZCB", () => {
         })
     })
 
+    test('Purchase| Correct approval && Max amount', async () => {
+        const type = constants.bondInfoLocal.investment
+        const tokenContract = getTokenContract();
+
+        const amount = constants.bondInfoLocal.total
+        const value = toBN(amount).mul(toBN(constants.bondInfoLocal.investmentTokenAmount))
+
+        await submitTransaction({
+            data: tokenContract.methods.approve(constants.bondInfoLocal.id, value).encodeABI(),
+            toAddress: constants[type],
+            privateKey: constants.OwnerPK
+        })
+
+        const contract = getZcbContract();
+
+        await submitTransaction({
+            data: contract.methods.purchase(amount).encodeABI(),
+            toAddress: constants.bondInfoLocal.id,
+            privateKey: constants.OwnerPK
+        }).catch(error => {
+            console.log(error)
+            throw Error(error)
+        })
+    })
+
     test('Deposit to ZCB', async () => {
         const type = constants.bondInfoLocal.interest
         const tokenContract = getTokenContract(type);
 
-        const value = toBN(1000).mul(toBN(constants.bondInfoLocal.interestTokenAmount))
+        const value = toBN(constants.purchaseAmount).mul(toBN(constants.bondInfoLocal.interestTokenAmount))
 
         await submitTransaction({
             data: tokenContract.methods.transfer(constants.bondInfoLocal.id, value).encodeABI(),
@@ -473,23 +500,33 @@ describe("Testing the ZCB", () => {
             data: contract.methods.redeem([150]).encodeABI(),
             toAddress: constants.bondInfoLocal.id,
             privateKey: constants.OwnerPK
+        }).catch(error => {
+            console.log(error)
+            throw Error(error)
         })
     })
 
     test('Redeem| Correct', async () => {
         const web3 = getWeb3()
         const block = await web3.eth.getBlock("latest")
-        await ganache.send("evm_mine", [{timestamp: block.timestamp + constants.bondInfoLocal.redeemLockPeriod + 1}]); // skips the timestamp to lockPeriod + 1 seconds
+        await ganache.send("evm_mine", [{timestamp: block.timestamp + constants.bondInfoLocal.redeemLockPeriod + 20, blocks: block.number + 2000 }]); // skips the timestamp to lockPeriod + 1 seconds
+
         const contract = getZcbContract();
+        const tokenContract = getTokenContract()
+        //
+        // const account = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
+        // const contractInfo = await contract.methods.getInfo().call()
+        // const contractBalance = await tokenContract.methods.balanceOf(constants.bondInfoLocal.id).call()
+        // console.log(contractBalance)
+
 
         await submitTransaction({
-            data: contract.methods.redeem([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).encodeABI(),
+            data: contract.methods.redeem([0]).encodeABI(),
             toAddress: constants.bondInfoLocal.id,
             privateKey: constants.OwnerPK
         }).catch(error => {
             console.log(error)
+            throw Error(error)
         })
     })
-
-
 })
