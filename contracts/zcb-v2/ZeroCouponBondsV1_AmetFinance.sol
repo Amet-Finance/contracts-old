@@ -4,8 +4,14 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract Zero_Coupon_Bond_V1 is ERC721 {
+contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     using SafeERC20 for IERC20;
+
+    error InvalidOwner();
+    error InvalidVAULTOwner();
+    error IsZeroAddress();
+    error InvalidOperation();
+    error MissingInterest();
 
     address public AMET_VAULT;
     string private _uri = "https://storage.amet.finance/contracts/zero-coupon-bond-v1.json";
@@ -18,7 +24,7 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
 
     uint16 private feePercentage;
 
-    uint256 private redeemLockPeriod; // Seconds required after which user can redeem
+    uint256 private redeemLockPeriod; // Seconds after which user can redeem
     uint256 private issuanceDate; // The date when the contract was created
 
     address private investmentToken; // Bond purchasing token
@@ -38,17 +44,23 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
     mapping(address owner => mapping(address operator => bool)) private _operatorApprovals; // approval for all the bonds
 
     modifier onlyIssuer() {
-        require(msg.sender == issuer, "Only the issuer can call this function");
+        if (msg.sender != issuer) {
+            revert InvalidOwner();
+        }
         _;
     }
 
     modifier onlyVaultOwner() {
-        require(msg.sender == AMET_VAULT, "Only the VAULT owner");
+        if (msg.sender != AMET_VAULT) {
+            revert InvalidVAULTOwner();
+        }
         _;
     }
 
     modifier notZeroAddress(address _address) {
-        require(_address != address(0), "Address can not be Zero");
+        if (msg.sender == address(0)) {
+            revert IsZeroAddress();
+        }
         _;
     }
 
@@ -120,7 +132,10 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
-        require(total - count >= purchased, "Can not burn already sold bonds");
+        if (total - count < purchased) {
+            revert InvalidOperation();
+        }
+
         total -= count;
         emit BondsBurnt(count);
     }
@@ -138,7 +153,9 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
     // ==== Investor functions ====
 
     function purchase(uint256 count) external {
-        require(purchased + count <= total, "Can not mint more then is left");
+        if (purchased + count > total) {
+            revert InvalidOperation();
+        }
 
         for (uint256 index = 0; index < count; index++) {
             uint256 id = purchased + index;
@@ -154,13 +171,25 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
         uint256 totalRedemption = interestTokenAmount * ids.length;
         IERC20 interest = IERC20(interestToken);
         uint256 contractInterestBalance = interest.balanceOf(address(this));
-        require(contractInterestBalance >= totalRedemption, "Not enough interest token");
+        if (contractInterestBalance < totalRedemption) {
+            revert MissingInterest();
+        }
 
-        for (uint256 index = 0; index < ids.length; index++) {
+        uint256 length = ids.length;
+
+        for (uint256 index = 0; index < length;) {
+            unchecked {
+                index++;
+            }
             uint256 id = ids[index];
 
-            require(ownerOf(id) == msg.sender, "Only owner of the bond");
-            require(_tokenInfo[id] + redeemLockPeriod < block.timestamp, "You can not redeem now");
+            if (ownerOf(id) != msg.sender) {
+                revert InvalidOwner();
+            }
+
+            if (_tokenInfo[id] + redeemLockPeriod >= block.timestamp) {
+                revert InvalidOperation();
+            }
             _burn(id);
 
             delete _owners[id];
@@ -168,7 +197,9 @@ contract Zero_Coupon_Bond_V1 is ERC721 {
 
         uint256 totalFees = totalRedemption * feePercentage / 1000;
 
-        redeemed += ids.length;
+        unchecked {
+            redeemed += ids.length;
+        }
         interest.safeTransfer(AMET_VAULT, totalFees);
         interest.safeTransfer(msg.sender, totalRedemption - totalFees);
     }

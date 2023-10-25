@@ -2,9 +2,14 @@
 
 pragma solidity ^0.8.20;
 
-import {Zero_Coupon_Bond_V1} from "./ZeroCouponBondsV1_AmetFinance.sol";
+import {ZeroCouponBondsV1_AmetFinance} from "./ZeroCouponBondsV1_AmetFinance.sol";
 
-contract Zero_Coupon_Bond_Issuer_V1 {
+contract ZeroCouponBondsIssuerV1_AmetFinance {
+
+    error InvalidOwner();
+    error ContractIsPaused();
+    error CreationFeeMissing();
+
     bool public isPaused = false;
 
     address public issuer;
@@ -19,7 +24,9 @@ contract Zero_Coupon_Bond_Issuer_V1 {
     }
 
     modifier onlyIssuer() {
-        require(msg.sender == issuer, "Only the issuer can call this function");
+        if (msg.sender != issuer) {
+            revert InvalidOwner();
+        }
         _;
     }
 
@@ -32,10 +39,14 @@ contract Zero_Coupon_Bond_Issuer_V1 {
         uint256 _interestTokenAmount,
         string memory _name
     ) external payable {
-        require(msg.value >= creationFee, "Creation fee is required");
-        require(isPaused == false, "Contract is paused");
+        if (msg.value < creationFee) {
+            revert CreationFeeMissing();
+        }
+        if (isPaused == true) {
+            revert ContractIsPaused();
+        }
 
-        Zero_Coupon_Bond_V1 bonds = new Zero_Coupon_Bond_V1(
+        ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
             msg.sender,
             _total,
             _redeemLockPeriod,
