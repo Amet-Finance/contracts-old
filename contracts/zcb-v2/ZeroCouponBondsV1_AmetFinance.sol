@@ -8,9 +8,6 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     using SafeERC20 for IERC20;
 
-    enum InvalidOperationsList{OWNER, VALUT_OWNER, ZERO_ADDRESS, MISSING_INTEREST, COUNT, DATE}
-    error InvalidOperation(InvalidOperationsList opType);
-
     address public AMET_VAULT;
     string private _uri = "https://storage.amet.finance/contracts/zero-coupon-bond-v1.json";
 
@@ -34,23 +31,17 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
     modifier onlyIssuer() {
-        if (msg.sender != issuer) {
-            revert InvalidOperation(InvalidOperationsList.OWNER);
-        }
+        require(msg.sender == issuer, "Invalid Issuer");
         _;
     }
 
     modifier onlyVaultOwner() {
-        if (msg.sender != AMET_VAULT) {
-            revert InvalidOperation(InvalidOperationsList.VALUT_OWNER);
-        }
+        require(msg.sender == AMET_VAULT);
         _;
     }
 
     modifier notZeroAddress(address _address) {
-        if (msg.sender == address(0)) {
-            revert InvalidOperation(InvalidOperationsList.ZERO_ADDRESS);
-        }
+        require(msg.sender != address(0), "Address is zero");
         _;
     }
 
@@ -122,9 +113,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
-        if (total - count < purchased) {
-            revert InvalidOperation(InvalidOperationsList.COUNT);
-        }
+        require(total - count >= purchased);
 
         total -= count;
         emit BondsBurnt(count);
@@ -143,9 +132,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     // ==== Investor functions ====
 
     function purchase(uint256 count) external {
-        if (purchased + count > total) {
-            revert InvalidOperation(InvalidOperationsList.COUNT);
-        }
+        require(purchased + count <= total);
 
         for (uint256 index = 0; index < count; index++) {
             uint256 tokenId = purchased + index;
@@ -157,28 +144,21 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
     }
 
-    function redeem(uint256[] calldata ids) external {
-        uint256 length = ids.length;
+    function redeem(uint256[] calldata tokenIds) external {
+        uint256 length = tokenIds.length;
         uint256 totalRedemption = interestTokenAmount * length;
         uint256 redeemLeft = block.timestamp - redeemLockPeriod;
 
         IERC20 interest = IERC20(interestToken);
         uint256 contractInterestBalance = interest.balanceOf(address(this));
 
-        if (totalRedemption > contractInterestBalance) {
-            revert InvalidOperation(InvalidOperationsList.MISSING_INTEREST);
-        }
+        require(totalRedemption <= contractInterestBalance, "There is no liquidity");
 
         for (uint256 index = 0; index < length; index++) {
-            uint256 tokenId = ids[index];
+            uint256 tokenId = tokenIds[index];
 
-            if (ownerOf(tokenId) != msg.sender) {
-                revert InvalidOperation(InvalidOperationsList.OWNER);
-            }
-
-            if (_purchaseDates[tokenId] >= redeemLeft) {
-                revert InvalidOperation(InvalidOperationsList.DATE);
-            }
+            require(ownerOf(tokenId) == msg.sender, "Only owner can redeem");
+            require(_purchaseDates[tokenId] < redeemLeft, "Redeem lock period did not pass");
 
             _burn(tokenId);
             delete _purchaseDates[tokenId];
@@ -225,10 +205,6 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
             feePercentage,
             issuanceDate
         );
-    }
-
-    function getTokenInfo(uint256 tokenId) external view returns (address, uint256) {
-        return (_ownerOf(tokenId), _purchaseDates[tokenId]);
     }
 
     function getTokensPurchaseDates(uint256[] calldata tokenIds) external view returns (uint256[] memory) {

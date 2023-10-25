@@ -21,11 +21,11 @@ const constants = {
     bondInfoLocal: {
         id: "",
         total: 50,
-        redeemLockPeriod: 5,
+        redeemLockPeriod: 0,
         investment: "USDT",
-        investmentTokenAmount: "",
+        investmentTokenAmount: toBN(100).mul(toBN(10).pow(toBN(18))),
         interest: "USDC",
-        interestTokenAmount: ""
+        interestTokenAmount: toBN(100).mul(toBN(10).pow(toBN(18)))
     },
 
     purchaseAmount: 10,
@@ -60,6 +60,11 @@ function getTokenContract(type = "USDC") {
 
 async function submitTransaction({data, value, privateKey, toAddress}) {
     const web3 = getWeb3();
+    // const block = await web3.eth.getBlock("latest")
+    // await ganache.send("evm_mine", [{
+    //     timestamp: block.timestamp + 10,
+    //     blocks: block.number + 1
+    // }]); // skips the timestamp to lockPeriod + 1 seconds
     const account = web3.eth.accounts.privateKeyToAccount(privateKey);
     web3.eth.handleRevert = true
 
@@ -219,15 +224,13 @@ describe("Testing the ZCB issuer", () => {
     })
 
     test('create| Correct Issue Bond', async () => {
-        const web3 = getWeb3();
         const contract = getIssuerContract();
 
-        const {total, redeemLockPeriod} = constants.bondInfoLocal
-        const investmentAmount = toBN(100).mul(toBN(10).pow(toBN(18)))
-        const interestAmount = toBN(110).mul(toBN(10).pow(toBN(18)))
+        const {total, redeemLockPeriod, interestTokenAmount, investmentTokenAmount} = constants.bondInfoLocal
+
 
         const txDetails = await submitTransaction({
-            data: contract.methods.create(total, redeemLockPeriod, constants.USDT, investmentAmount, constants.USDC, interestAmount, "USDT-USDC| Amet Finance").encodeABI(),
+            data: contract.methods.create(total, redeemLockPeriod, constants.USDT, investmentTokenAmount, constants.USDC, interestTokenAmount, "USDT-USDC| Amet Finance").encodeABI(),
             value: constants.changedFee,
             privateKey: constants.RandomPK3
         })
@@ -237,10 +240,7 @@ describe("Testing the ZCB issuer", () => {
         constants.bondInfoLocal.issuer = decoded.issuer;
 
         constants.interestToken = constants.USDT;
-        constants.bondInfoLocal.interestTokenAmount = interestAmount.toString();
-
         constants.investmentToken = constants.USDC;
-        constants.bondInfoLocal.investmentTokenAmount = investmentAmount.toString();
     })
 
     test.failing('create| Wrong | Without value', async () => {
@@ -446,7 +446,7 @@ describe("Testing the ZCB", () => {
         const type = constants.bondInfoLocal.investment
         const tokenContract = getTokenContract();
 
-        const amount = constants.bondInfoLocal.total
+        const amount = constants.purchaseAmount
         const value = toBN(amount).mul(toBN(constants.bondInfoLocal.investmentTokenAmount))
 
         await submitTransaction({
@@ -509,7 +509,10 @@ describe("Testing the ZCB", () => {
     test('Redeem| Correct', async () => {
         const web3 = getWeb3()
         const block = await web3.eth.getBlock("latest")
-        await ganache.send("evm_mine", [{timestamp: block.timestamp + constants.bondInfoLocal.redeemLockPeriod + 20, blocks: block.number + 2000 }]); // skips the timestamp to lockPeriod + 1 seconds
+        await ganache.send("evm_mine", [{
+            timestamp: block.timestamp + constants.bondInfoLocal.redeemLockPeriod + 20,
+            blocks: block.number + 2000
+        }]); // skips the timestamp to lockPeriod + 1 seconds
 
         const contract = getZcbContract();
         const tokenContract = getTokenContract()
@@ -518,6 +521,11 @@ describe("Testing the ZCB", () => {
         // const contractInfo = await contract.methods.getInfo().call()
         // const contractBalance = await tokenContract.methods.balanceOf(constants.bondInfoLocal.id).call()
         // console.log(contractBalance)
+
+        const owner = await contract.methods.ownerOf(0).call()
+        const purchaseDate = await contract.methods.getTokensPurchaseDates([0]).call()
+
+        // const bondInfoInfo = await contract.methods.getTokenInfo(0).call()
 
 
         await submitTransaction({

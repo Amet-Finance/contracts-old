@@ -1,17 +1,11 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.20;
 
 import {ZeroCouponBondsV1_AmetFinance} from "./ZeroCouponBondsV1_AmetFinance.sol";
 
 contract ZeroCouponBondsIssuerV1_AmetFinance {
 
-    error InvalidOwner();
-    error ContractIsPaused();
-    error CreationFeeMissing();
-
     bool public isPaused = false;
-
     address public issuer;
 
     uint16 public creationFeePercentage = 50; // the percentage will be divided to 10 in ZCB_V1.sol
@@ -24,9 +18,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance {
     }
 
     modifier onlyIssuer() {
-        if (msg.sender != issuer) {
-            revert InvalidOwner();
-        }
+        require(msg.sender == issuer, "Invalid Issuer");
         _;
     }
 
@@ -39,12 +31,8 @@ contract ZeroCouponBondsIssuerV1_AmetFinance {
         uint256 _interestTokenAmount,
         string memory _name
     ) external payable {
-        if (msg.value < creationFee) {
-            revert CreationFeeMissing();
-        }
-        if (isPaused == true) {
-            revert ContractIsPaused();
-        }
+        require(msg.value >= creationFee, "Creation fee is missing");
+        require(isPaused == false, "Contract is Paused");
 
         ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
             msg.sender,

@@ -11,12 +11,12 @@ const CONTRACT_TYPES = {
 
 const DIRECTIONS = {
     [CONTRACT_TYPES.ZCB_ISSUER]: {
-        bin: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/bin/contracts_zcb-v2_ZeroCouponBondsIssuerV1_AmetFinance_sol_Zero_Coupon_Bond_Issuer_V1.bin'),
-        abi: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/abi/contracts_zcb-v2_ZeroCouponBondsIssuerV1_AmetFinance_sol_Zero_Coupon_Bond_Issuer_V1.abi')
+        bin: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/bin/contracts_zcb-v2_ZeroCouponBondsIssuerV1_AmetFinance_sol_ZeroCouponBondsIssuerV1_AmetFinance.bin'),
+        abi: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/abi/contracts_zcb-v2_ZeroCouponBondsIssuerV1_AmetFinance_sol_ZeroCouponBondsIssuerV1_AmetFinance.abi')
     },
     [CONTRACT_TYPES.ZCB]: {
-        bin: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/bin/contracts_zcb-v2_ZeroCouponBondsV1_AmetFinance_sol_Zero_Coupon_Bond_V1.bin'),
-        abi: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/abi/contracts_zcb-v2_ZeroCouponBondsV1_AmetFinance_sol_Zero_Coupon_Bond_V1.abi')
+        bin: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/bin/contracts_zcb-v2_ZeroCouponBondsV1_AmetFinance_sol_ZeroCouponBondsV1_AmetFinance.bin'),
+        abi: path.join(__dirname, '../contracts/zcb-v2/artefacts/zcb-issuer/abi/contracts_zcb-v2_ZeroCouponBondsV1_AmetFinance_sol_ZeroCouponBondsV1_AmetFinance.abi')
     },
     [CONTRACT_TYPES.USDT]: {
         bin: path.join(__dirname, '../contracts/tokens/artefacts/USDT/bin/contracts_tokens_USDT_sol_USDT.bin'),
