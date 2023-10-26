@@ -3,13 +3,12 @@ const ganacheProvider = require('./ganache')
 
 const web3 = new Web3(ganacheProvider);
 
-async function deploy(account, contractAbi, contractBytecode) {
+async function deploy(account, contractAbi, contractBytecode, constructorArgs =[]) {
     try {
 
 
         const MyContract = new web3.eth.Contract(contractAbi);
 
-        const constructorArgs = []; // Replace with actual constructor arguments
         const gasPrice = await web3.eth.getGasPrice();
         console.log(`gasPrice`, gasPrice)
 
@@ -32,6 +31,7 @@ async function deploy(account, contractAbi, contractBytecode) {
             abi: contractAbi
         };
     } catch (error) {
+        console.log(error)
         console.error('Error deploying contract: ' + error);
     }
 }

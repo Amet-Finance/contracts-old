@@ -21,7 +21,7 @@ const constants = {
     bondInfoLocal: {
         id: "",
         total: 50,
-        redeemLockPeriod: 0,
+        redeemLockPeriod: 10,
         investment: "USDT",
         investmentTokenAmount: toBN(100).mul(toBN(10).pow(toBN(18))),
         interest: "USDC",
@@ -123,7 +123,20 @@ async function sleep(ms) {
     });
 }
 
-
+/**
+ @description The tests below check for the methods blow, which are under issuer contract
+  "changeCreationFee(uint256)",
+  "changeCreationFeePercentage(uint16)",
+  "changePauseState(bool)",
+  "create(uint256,uint256,address,uint256,address,uint256,string)",
+  "[VIEW]creationFee()",
+  "[VIEW]creationFeePercentage()",
+  "[VIEW]isPaused()",
+  "[VIEW]owner()",
+  "renounceOwnership()" ~ not checked, no need,
+  "transferOwnership(address)",
+  "withdraw(address,uint256)"
+ **/
 describe("Testing the ZCB issuer", () => {
 
     beforeAll(async () => {
@@ -132,7 +145,7 @@ describe("Testing the ZCB issuer", () => {
         const account = getWeb3().eth.accounts.privateKeyToAccount(accounts[firstAddress].secretKey)
 
         const issuerConfig = getConfig(CONTRACT_TYPES.ZCB_ISSUER)
-        const issuerContract = await deploy(account, issuerConfig.abi, issuerConfig.bytecode)
+        const issuerContract = await deploy(account, issuerConfig.abi, issuerConfig.bytecode, ["50", "100000000000000000"])
 
         const usdtConfig = getConfig(CONTRACT_TYPES.USDT)
         const usdtContract = await deploy(account, usdtConfig.abi, usdtConfig.bytecode)
@@ -206,7 +219,7 @@ describe("Testing the ZCB issuer", () => {
         const newAccount = web3.eth.accounts.privateKeyToAccount(constants.RandomPK1);
 
         const txDetails = await submitTransaction({
-            data: contract.methods.changeIssuer(newAccount.address).encodeABI(),
+            data: contract.methods.transferOwnership(newAccount.address).encodeABI(),
             privateKey: constants.OwnerPK
         })
         console.log(txDetails)
@@ -218,7 +231,7 @@ describe("Testing the ZCB issuer", () => {
         const newAccount = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
 
         const txDetails = await submitTransaction({
-            data: contract.methods.changeIssuer(newAccount.address).encodeABI(),
+            data: contract.methods.transferOwnership(newAccount.address).encodeABI(),
             privateKey: constants.RandomPK1
         })
     })
@@ -333,7 +346,7 @@ describe("Testing the ZCB issuer", () => {
 
         const owner = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK)
 
-        const issuer = await contract.methods.issuer().call()
+        const issuer = await contract.methods.owner().call()
         const creationFeePercentage = await contract.methods.creationFeePercentage().call()
         const creationFee = await contract.methods.creationFee().call()
         const isPaused = await contract.methods.isPaused().call()
@@ -515,18 +528,6 @@ describe("Testing the ZCB", () => {
         }]); // skips the timestamp to lockPeriod + 1 seconds
 
         const contract = getZcbContract();
-        const tokenContract = getTokenContract()
-        //
-        // const account = web3.eth.accounts.privateKeyToAccount(constants.OwnerPK);
-        // const contractInfo = await contract.methods.getInfo().call()
-        // const contractBalance = await tokenContract.methods.balanceOf(constants.bondInfoLocal.id).call()
-        // console.log(contractBalance)
-
-        const owner = await contract.methods.ownerOf(0).call()
-        const purchaseDate = await contract.methods.getTokensPurchaseDates([0]).call()
-
-        // const bondInfoInfo = await contract.methods.getTokenInfo(0).call()
-
 
         await submitTransaction({
             data: contract.methods.redeem([0]).encodeABI(),

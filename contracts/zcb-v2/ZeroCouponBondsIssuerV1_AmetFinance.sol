@@ -1,25 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.20; // todo remember to change the advanced evm version to shanghai
 
 import {ZeroCouponBondsV1_AmetFinance} from "./ZeroCouponBondsV1_AmetFinance.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ZeroCouponBondsIssuerV1_AmetFinance {
+    error CreationFeeMissing();
+    error ContractPaused();
 
-    bool public isPaused = false;
-    address public issuer;
+contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
 
-    uint16 public creationFeePercentage = 50; // the percentage will be divided to 10 in ZCB_V1.sol
-    uint256 public creationFee = 100000000000000000;
+    // @author global paused state for creation
+    bool public isPaused;
+
+    // @author the ETH which will be paid on Bond issuance
+    uint256 public creationFee;
+    // @author the percentage which will be deducted from redeemable bonds.
+    // @notice the percentage will be divided to 10
+    uint16 public creationFeePercentage;
 
     event Create(address indexed issuer, address indexed contractAddress);
+    event ChangeFee(uint256 from, uint256 to);
 
-    constructor() {
-        issuer = msg.sender;
-    }
-
-    modifier onlyIssuer() {
-        require(msg.sender == issuer, "Invalid Issuer");
-        _;
+    constructor(uint16 _creationFeePercentage, uint256 _creationFee) Ownable(msg.sender) {
+        creationFeePercentage = _creationFeePercentage;
+        creationFee = _creationFee;
     }
 
     function create(
@@ -31,11 +35,11 @@ contract ZeroCouponBondsIssuerV1_AmetFinance {
         uint256 _interestTokenAmount,
         string memory _name
     ) external payable {
-        require(msg.value >= creationFee, "Creation fee is missing");
-        require(isPaused == false, "Contract is Paused");
+        if (msg.value < creationFee) revert CreationFeeMissing();
+        if (isPaused == true) revert ContractPaused();
 
         ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
-            msg.sender,
+            owner(),
             _total,
             _redeemLockPeriod,
             _investmentToken,
@@ -48,26 +52,23 @@ contract ZeroCouponBondsIssuerV1_AmetFinance {
         emit Create(msg.sender, address(bonds));
     }
 
-    // ==== Issuer functions ====
-
-    function changeIssuer(address newIssuer) external onlyIssuer {
-        issuer = newIssuer;
-    }
-
-    function withdraw(address toAddress, uint256 amount) external onlyIssuer {
+    // @author From here starts owner functions
+    // @author withdraw
+    function withdraw(address toAddress, uint256 amount) external onlyOwner {
         payable(toAddress).transfer(amount);
     }
 
-    function changeCreationFee(uint256 percent) external onlyIssuer {
+    function changeCreationFee(uint256 percent) external onlyOwner {
+        emit ChangeFee(creationFee, percent);
         creationFee = percent;
     }
 
-    function changeCreationFeePercentage(uint16 percent) external onlyIssuer {
+    function changeCreationFeePercentage(uint16 percent) external onlyOwner {
+        emit ChangeFee(creationFeePercentage, percent);
         creationFeePercentage = percent;
     }
 
-    function changePauseState(bool _pause) external onlyIssuer {
+    function changePauseState(bool _pause) external onlyOwner {
         isPaused = _pause;
     }
-    // =========
 }
