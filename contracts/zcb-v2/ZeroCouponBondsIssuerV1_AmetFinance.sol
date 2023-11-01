@@ -40,6 +40,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
 
         ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
             owner(),
+            msg.sender,
             _total,
             _redeemLockPeriod,
             _investmentToken,

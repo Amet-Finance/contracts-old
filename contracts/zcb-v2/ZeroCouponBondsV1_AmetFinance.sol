@@ -53,6 +53,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     event BondsBurnt(uint256 count);
 
     constructor(
+        address _vault,
         address _issuer,
         uint256 _total,
         uint256 _redeemLockPeriod,
@@ -63,7 +64,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         uint16 _feePercentage,
         string memory _denomination
     ) ERC721(_denomination, "ZCB") {
-        AMET_VAULT = msg.sender;
+        AMET_VAULT = _vault;
         issuer = _issuer;
         total = _total;
         redeemLockPeriod = _redeemLockPeriod;
