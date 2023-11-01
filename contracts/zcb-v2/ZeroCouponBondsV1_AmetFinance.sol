@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721, Strings} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+    error OnlyOwner();
+    error OnlyVAULTOwner();
+    error InvalidOperation();
 
 contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     using SafeERC20 for IERC20;
 
     address public AMET_VAULT;
-    string private _uri = "https://storage.amet.finance/contracts/zero-coupon-bond-v1.json";
+    string private _uri = "https://storage.amet.finance/contracts/";
 
     address private issuer; // Bonds issuer coupon
 
@@ -31,17 +35,12 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
     modifier onlyIssuer() {
-        require(msg.sender == issuer, "Invalid Issuer");
+        if (msg.sender != issuer) revert OnlyOwner();
         _;
     }
 
     modifier onlyVaultOwner() {
-        require(msg.sender == AMET_VAULT);
-        _;
-    }
-
-    modifier notZeroAddress(address _address) {
-        require(msg.sender != address(0), "Address is zero");
+        if (msg.sender != AMET_VAULT) revert OnlyVAULTOwner();
         _;
     }
 
@@ -79,12 +78,12 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function tokenURI() public view returns (string memory) {
-        return _uri; // todo update this part as it returns the base uri only
+        return string.concat(_uri, Strings.toHexString(address(this)), ".json");
     }
 
     //    ==== VAULT owner functions ====
 
-    function changeVaultAddress(address newAddress) external onlyVaultOwner notZeroAddress(newAddress) {
+    function changeVaultAddress(address newAddress) external onlyVaultOwner {
         emit ChangeVaultAddress(AMET_VAULT, newAddress);
         AMET_VAULT = newAddress;
     }
@@ -102,7 +101,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     // ==== Issuer functions ====
 
-    function changeOwner(address _newAddress) external onlyIssuer notZeroAddress(_newAddress) {
+    function changeOwner(address _newAddress) external onlyIssuer {
         issuer = _newAddress;
         emit ChangeOwner(msg.sender, _newAddress);
     }
@@ -113,7 +112,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
-        require(total - count >= purchased);
+        if (total - count < purchased) revert InvalidOperation();
 
         total -= count;
         emit BondsBurnt(count);
@@ -132,7 +131,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     // ==== Investor functions ====
 
     function purchase(uint256 count) external {
-        require(purchased + count <= total);
+        if (purchased + count > total) revert InvalidOperation();
 
         for (uint256 index = 0; index < count; index++) {
             uint256 tokenId = purchased + index;
@@ -152,20 +151,23 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         IERC20 interest = IERC20(interestToken);
         uint256 contractInterestBalance = interest.balanceOf(address(this));
 
-        require(totalRedemption <= contractInterestBalance, "There is no liquidity");
+        if (totalRedemption > contractInterestBalance) revert InvalidOperation();
 
         for (uint256 index = 0; index < length; index++) {
             uint256 tokenId = tokenIds[index];
 
-            require(ownerOf(tokenId) == msg.sender, "Only owner can redeem");
-            require(_purchaseDates[tokenId] < redeemLeft, "Redeem lock period did not pass");
+
+            if (ownerOf(tokenId) != msg.sender) revert OnlyOwner();
+            if (_purchaseDates[tokenId] > redeemLeft) revert InvalidOperation();
 
             _burn(tokenId);
             delete _purchaseDates[tokenId];
         }
 
         uint256 totalFees = totalRedemption * feePercentage / 1000;
-        redeemed += length;
+        unchecked {
+            redeemed += length;
+        }
 
         interest.safeTransfer(AMET_VAULT, totalFees);
         interest.safeTransfer(msg.sender, totalRedemption - totalFees);
@@ -217,9 +219,9 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 }
 
-//@audit import files with {}
+//@audit import files with {} - done
 //@audit Use custom errors instead of require statements - done
-//@audit missing event emission on setter functions
+//@audit missing event emission on setter functions - done
 //@audit use stable pragma statement
 //@audit Filename and contract name mismatch - done
 //@audit use ++index instead of index++, as well as don't initialise index to 0
