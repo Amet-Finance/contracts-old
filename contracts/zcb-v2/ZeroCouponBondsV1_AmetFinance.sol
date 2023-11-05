@@ -133,6 +133,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     function purchase(uint256 count) external {
         if (purchased + count > total) revert InvalidOperation();
+        uint256 totalPurchased = count * investmentTokenAmount;
 
         for (uint256 index = 0; index < count; index++) {
             uint256 tokenId = purchased + index;
@@ -140,8 +141,14 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
             _purchaseDates[tokenId] = block.timestamp;
         }
 
-        purchased += count;
-        IERC20(investmentToken).safeTransferFrom(msg.sender, issuer, count * investmentTokenAmount);
+        unchecked {
+            purchased += count;
+        }
+
+        uint256 totalFees = totalPurchased * feePercentage / 1000;
+        IERC20 investment = IERC20(investmentToken);
+        investment.safeTransferFrom(msg.sender, AMET_VAULT, totalFees);
+        investment.safeTransferFrom(msg.sender, issuer, totalPurchased - totalFees);
     }
 
     function redeem(uint256[] calldata tokenIds) external {
@@ -165,13 +172,11 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
             delete _purchaseDates[tokenId];
         }
 
-        uint256 totalFees = totalRedemption * feePercentage / 1000;
         unchecked {
             redeemed += length;
         }
 
-        interest.safeTransfer(AMET_VAULT, totalFees);
-        interest.safeTransfer(msg.sender, totalRedemption - totalFees);
+        interest.safeTransfer(msg.sender, totalRedemption);
     }
 
     // ========

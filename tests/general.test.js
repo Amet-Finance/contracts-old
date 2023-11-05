@@ -142,7 +142,15 @@ describe("Testing the ZCB issuer", () => {
     beforeAll(async () => {
         const accounts = ganache.getInitialAccounts()
         const firstAddress = Object.keys(accounts)[0]
-        const account = getWeb3().eth.accounts.privateKeyToAccount(accounts[firstAddress].secretKey)
+        const account = getWeb3().eth.accounts.privateKeyToAccount(accounts[firstAddress].secretKey);
+        let index = 1;
+        Object.keys(accounts)
+            .forEach((item) => {
+                if (item.toLowerCase() !== account.address.toLowerCase()) {
+                    constants[`RandomPK${index}`] = accounts[item].secretKey
+                    index++
+                }
+            })
 
         const issuerConfig = getConfig(CONTRACT_TYPES.ZCB_ISSUER)
         const issuerContract = await deploy(account, issuerConfig.abi, issuerConfig.bytecode, ["50", "100000000000000000"])
@@ -158,19 +166,6 @@ describe("Testing the ZCB issuer", () => {
 
         constants.USDT = usdtContract.contractAddress
         constants.USDC = usdcContract.contractAddress
-
-        let index = 1;
-
-        Object.keys(accounts)
-            .forEach((item) => {
-                if (item.toLowerCase() !== account.address.toLowerCase()) {
-                    constants[`RandomPK${index}`] = accounts[item].secretKey
-                    index++
-                }
-            })
-
-        // const functions = Object.keys(getIssuerContract().methods).filter(i => !i.startsWith("0x"))
-        // console.log(functions)
     });
 
     test.failing('changeCreationFee| Wrong wallet', async () => {
