@@ -21,6 +21,12 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
     event Create(address indexed issuer, address indexed contractAddress);
     event ChangeFee(uint256 from, uint256 to);
 
+    modifier checkCreation() {
+        if (msg.value < creationFee) revert CreationFeeMissing();
+        if (isPaused == true) revert ContractPaused();
+        _;
+    }
+
     constructor(uint16 _creationFeePercentage, uint256 _creationFee) Ownable(msg.sender) {
         creationFeePercentage = _creationFeePercentage;
         creationFee = _creationFee;
@@ -34,10 +40,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
         address _interestToken,
         uint256 _interestTokenAmount,
         string memory _name
-    ) external payable {
-        if (msg.value < creationFee) revert CreationFeeMissing();
-        if (isPaused == true) revert ContractPaused();
-
+    ) external payable checkCreation {
         ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
             owner(),
             msg.sender,

@@ -44,6 +44,11 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         _;
     }
 
+    modifier isNotZeroAddress(address _customAddress) {
+        if (_customAddress == address(0)) revert InvalidOperation();
+        _;
+    }
+
     event ChangeOwner(address oldAddress, address newAddress);
     event ChangeVaultAddress(address oldAddress, address newAddress);
 
@@ -85,9 +90,9 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     //    ==== VAULT owner functions ====
 
-    function changeVaultAddress(address newAddress) external onlyVaultOwner {
-        emit ChangeVaultAddress(AMET_VAULT, newAddress);
-        AMET_VAULT = newAddress;
+    function changeVaultAddress(address _newAddress) external onlyVaultOwner isNotZeroAddress(_newAddress) {
+        emit ChangeVaultAddress(AMET_VAULT, _newAddress);
+        AMET_VAULT = _newAddress;
     }
 
     function changeFeePercentage(uint16 percentage) external onlyVaultOwner {
@@ -108,7 +113,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         emit DecreasedRedeemLockPeriod(_newRedeemLockPeriod);
     }
 
-    function changeOwner(address _newAddress) external onlyIssuer {
+    function changeOwner(address _newAddress) external onlyIssuer isNotZeroAddress(_newAddress) {
         issuer = _newAddress;
         emit ChangeOwner(msg.sender, _newAddress);
     }

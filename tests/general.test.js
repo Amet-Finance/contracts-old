@@ -315,6 +315,9 @@ describe("Testing the ZCB issuer", () => {
 
     test('isPaused| Correct wallet', async () => {
         const contract = getIssuerContract();
+        const contractPausedState = await contract.methods.isPaused().call();
+        console.log(contractPausedState)
+
         const txDetails = await submitTransaction({
             data: contract.methods.changePauseState(constants.isPaused).encodeABI(),
             privateKey: constants.OwnerPK
@@ -325,12 +328,17 @@ describe("Testing the ZCB issuer", () => {
         const contract = getIssuerContract();
 
         const investmentAmount = toBN(100).mul(toBN(10).pow(toBN(18)))
-        const interestAmount = toBN(110).mul(toBN(10).pow(toBN(18)))
+        const interestAmount = toBN(110).mul(toBN(10).pow(toBN(18)));
+        const contractPausedState = await contract.methods.isPaused().call();
+        console.log(contractPausedState)
 
         const txDetails = await submitTransaction({
             data: contract.methods.create(100, 3600, constants.USDT, investmentAmount, constants.USDC, interestAmount, "USDT-USDC| Amet Finance").encodeABI(),
             value: constants.changedFee,
             privateKey: constants.RandomPK3
+        }).catch(error => {
+            console.log(error);
+            throw Error(error);
         })
         console.log(txDetails)
     })
