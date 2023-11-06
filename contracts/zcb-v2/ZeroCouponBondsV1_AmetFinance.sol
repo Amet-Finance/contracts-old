@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.18;
 
 import {ERC721, Strings} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -114,14 +114,14 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function issueBonds(uint256 count) external onlyIssuer {
-        total += count;
+        total = total + count;
         emit BondsIssued(count);
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
         if (total - count < purchased) revert InvalidOperation();
 
-        total -= count;
+        total = total - count;
         emit BondsBurnt(count);
     }
 
@@ -141,14 +141,17 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         if (purchased + count > total) revert InvalidOperation();
         uint256 totalPurchased = count * investmentTokenAmount;
 
-        for (uint256 index = 0; index < count; index++) {
+        for (uint256 index = 0; index < count;) {
             uint256 tokenId = purchased + index;
             _safeMint(msg.sender, tokenId);
             _purchaseDates[tokenId] = block.timestamp;
+            unchecked {
+                ++index;
+            }
         }
 
         unchecked {
-            purchased += count;
+            purchased = purchased + count;
         }
 
         uint256 totalFees = totalPurchased * feePercentage / 1000;
@@ -167,7 +170,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
         if (totalRedemption > contractInterestBalance) revert InvalidOperation();
 
-        for (uint256 index = 0; index < length; index++) {
+        for (uint256 index = 0; index < length;) {
             uint256 tokenId = tokenIds[index];
 
 
@@ -176,10 +179,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
             _burn(tokenId);
             delete _purchaseDates[tokenId];
+            unchecked {
+                ++index;
+            }
         }
 
         unchecked {
-            redeemed += length;
+            redeemed = redeemed + length;
         }
 
         interest.safeTransfer(msg.sender, totalRedemption);
@@ -222,10 +228,14 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function getTokensPurchaseDates(uint256[] calldata tokenIds) external view returns (uint256[] memory) {
-        uint256[] memory purchaseDates = new uint256[](tokenIds.length);
+        uint256 tokenIdsLength = tokenIds.length;
+        uint256[] memory purchaseDates = new uint256[](tokenIdsLength);
 
-        for (uint256 id = 0; id < tokenIds.length; id += 1) {
+        for (uint256 id = 0; id < tokenIdsLength;) {
             purchaseDates[id] = _purchaseDates[tokenIds[id]];
+            unchecked {
+                ++id;
+            }
         }
         return purchaseDates;
     }
@@ -236,5 +246,5 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 //@audit missing event emission on setter functions - done
 //@audit use stable pragma statement
 //@audit Filename and contract name mismatch - done
-//@audit use ++index instead of index++, as well as don't initialise index to 0
+//@audit use ++index instead of index++, as well as don't initialise index to 0 - done
 //@audit include NatSpec especially for the external functions
