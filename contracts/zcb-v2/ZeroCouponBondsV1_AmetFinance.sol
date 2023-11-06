@@ -141,18 +141,14 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         if (purchased + count > total) revert InvalidOperation();
         uint256 totalPurchased = count * investmentTokenAmount;
 
-        for (uint256 index = 0; index < count;) {
+        for (uint256 index; index < count;) {
             uint256 tokenId = purchased + index;
             _safeMint(msg.sender, tokenId);
             _purchaseDates[tokenId] = block.timestamp;
-            unchecked {
-                ++index;
-            }
+            unchecked {++index;}
         }
 
-        unchecked {
-            purchased = purchased + count;
-        }
+        unchecked {purchased = purchased + count;}
 
         uint256 totalFees = totalPurchased * feePercentage / 1000;
         IERC20 investment = IERC20(investmentToken);
@@ -170,7 +166,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
         if (totalRedemption > contractInterestBalance) revert InvalidOperation();
 
-        for (uint256 index = 0; index < length;) {
+        for (uint256 index; index < length;) {
             uint256 tokenId = tokenIds[index];
 
 
@@ -179,14 +175,10 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
             _burn(tokenId);
             delete _purchaseDates[tokenId];
-            unchecked {
-                ++index;
-            }
+            unchecked {++index;}
         }
 
-        unchecked {
-            redeemed = redeemed + length;
-        }
+        unchecked {redeemed = redeemed + length;}
 
         interest.safeTransfer(msg.sender, totalRedemption);
     }
@@ -231,11 +223,9 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         uint256 tokenIdsLength = tokenIds.length;
         uint256[] memory purchaseDates = new uint256[](tokenIdsLength);
 
-        for (uint256 id = 0; id < tokenIdsLength;) {
+        for (uint256 id; id < tokenIdsLength;) {
             purchaseDates[id] = _purchaseDates[tokenIds[id]];
-            unchecked {
-                ++id;
-            }
+            unchecked {++id;}
         }
         return purchaseDates;
     }
