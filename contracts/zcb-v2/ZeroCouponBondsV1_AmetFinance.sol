@@ -143,7 +143,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
         for (uint256 index; index < count;) {
             uint256 tokenId = purchased + index;
-            _safeMint(msg.sender, tokenId);
+            _mint(msg.sender, tokenId);
             _purchaseDates[tokenId] = block.timestamp;
             unchecked {++index;}
         }
@@ -168,7 +168,6 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
         for (uint256 index; index < length;) {
             uint256 tokenId = tokenIds[index];
-
 
             if (ownerOf(tokenId) != msg.sender) revert OnlyOwner();
             if (_purchaseDates[tokenId] > redeemLeft) revert InvalidOperation();
