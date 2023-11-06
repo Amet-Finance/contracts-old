@@ -51,6 +51,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     event BondsIssued(uint256 count);
     event BondsBurnt(uint256 count);
+    event DecreasedRedeemLockPeriod(uint256 newRedeemLockPeriod);
 
     constructor(
         address _vault,
@@ -101,6 +102,11 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     // ==================
 
     // ==== Issuer functions ====
+    function decreaseRedeemLockPeriod(uint256 _newRedeemLockPeriod) external onlyIssuer {
+        if (_newRedeemLockPeriod > redeemLockPeriod) revert InvalidOperation();
+        redeemLockPeriod = _newRedeemLockPeriod;
+        emit DecreasedRedeemLockPeriod(_newRedeemLockPeriod);
+    }
 
     function changeOwner(address _newAddress) external onlyIssuer {
         issuer = _newAddress;

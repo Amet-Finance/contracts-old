@@ -533,4 +533,38 @@ describe("Testing the ZCB", () => {
             throw Error(error)
         })
     })
+
+
+    test.failing('Decreasing Lock Period| Wrong', async () => {
+        const web3 = getWeb3()
+
+        const contract = getZcbContract();
+
+        await submitTransaction({
+            data: contract.methods.decreaseRedeemLockPeriod(12).encodeABI(),
+            toAddress: constants.bondInfoLocal.id,
+            privateKey: constants.RandomPK3
+        }).catch(error => {
+            console.log(error)
+            throw Error(error)
+        })
+    })
+
+    test('Decreasing Lock Period| Correct', async () => {
+        const web3 = getWeb3()
+
+        const contract = getZcbContract();
+        const newLockPeriod = 3
+
+        await submitTransaction({
+            data: contract.methods.decreaseRedeemLockPeriod(newLockPeriod).encodeABI(),
+            toAddress: constants.bondInfoLocal.id,
+            privateKey: constants.RandomPK3
+        }).catch(error => {
+            console.log(error)
+            throw Error(error)
+        })
+
+        constants.bondInfoLocal.redeemLockPeriod = newLockPeriod;
+    })
 })
