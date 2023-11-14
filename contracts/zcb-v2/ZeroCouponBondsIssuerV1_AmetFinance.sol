@@ -56,7 +56,8 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
     // @author From here starts owner functions
     // @author withdraw
     function withdraw(address toAddress, uint256 amount) external onlyOwner {
-        payable(toAddress).transfer(amount);
+        (bool sent,) = payable(toAddress).call{value: amount}("");
+        require(sent, "Failed to send Ether");
     }
 
     function changeCreationFee(uint256 percent) external onlyOwner {
