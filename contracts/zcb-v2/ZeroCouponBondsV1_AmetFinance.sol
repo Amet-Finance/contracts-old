@@ -48,11 +48,11 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         _;
     }
 
-    event ChangeOwner(address oldAddress, address newAddress);
-    event ChangeVaultAddress(address oldAddress, address newAddress);
+    event ChangeOwner(address newAddress);
+    event ChangeVaultAddress(address newAddress);
 
     event ChangeBaseURI(string uri);
-    event ChangeFeePercentage(uint16 oldFeePercentage, uint16 newFeePercentage);
+    event ChangeFeePercentage(uint16 newFeePercentage);
 
     event BondsIssued(uint256 count);
     event BondsBurnt(uint256 count);
@@ -88,14 +88,14 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     //    ==== VAULT owner functions ====
 
-    function changeVaultAddress(address newVaultAddress) external onlyVaultOwner isNotZeroAddress(newVaultAddress) {
-        emit ChangeVaultAddress(AMET_VAULT, newVaultAddress);
-        AMET_VAULT = newVaultAddress;
+    function changeVaultAddress(address _vaultAddress) external onlyVaultOwner isNotZeroAddress(_vaultAddress) {
+        emit ChangeVaultAddress(_vaultAddress);
+        AMET_VAULT = _vaultAddress;
     }
 
     function decreaseFeePercentage(uint16 percentage) external onlyVaultOwner {
         if (percentage >= _feePercentage) revert InvalidOperation();
-        emit ChangeFeePercentage(_feePercentage, percentage);
+        emit ChangeFeePercentage(percentage);
         _feePercentage = percentage;
     }
 
@@ -114,8 +114,8 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function changeOwner(address _newAddress) external onlyIssuer isNotZeroAddress(_newAddress) {
+        emit ChangeOwner(_newAddress);
         _issuer = _newAddress;
-        emit ChangeOwner(msg.sender, _newAddress);
     }
 
     function issueBonds(uint256 count) external onlyIssuer {
@@ -132,12 +132,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function withdrawRemaining() external onlyIssuer {
-        uint256 balance = IERC20(_interestToken).balanceOf(address(this)); // 1100
+        IERC20 interest = IERC20(_interestToken);
+        uint256 balance = interest.balanceOf(address(this)); // 1100
         uint256 totalNeeded = (_total - _redeemed) * _interestTokenAmount; // 1100
         if (totalNeeded >= balance) revert InvalidOperation();
 
         uint256 transferAmount = balance - totalNeeded;
-        IERC20(_interestToken).safeTransfer(_issuer, transferAmount);
+        interest.safeTransfer(_issuer, transferAmount);
         emit WithdrawRemaining(transferAmount);
     }
     // ========
@@ -145,11 +146,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     // ==== Investor functions ====
 
     function purchase(uint256 count) external {
-        if (_purchased + count > _total) revert InvalidOperation();
+        uint256 currentPurchased = _purchased;
+
+        if (currentPurchased + count > _total) revert InvalidOperation();
         uint256 totalPurchased = count * _investmentTokenAmount;
 
         for (uint256 index; index < count;) {
-            uint256 tokenId = _purchased + index;
+            uint256 tokenId = currentPurchased + index;
             _mint(msg.sender, tokenId);
             _purchaseDates[tokenId] = block.timestamp;
             unchecked {++index;}
