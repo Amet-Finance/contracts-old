@@ -35,12 +35,12 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
     modifier onlyIssuer() {
-        if (msg.sender != issuer) revert OnlyOwner();
+        require(msg.sender == issuer);
         _;
     }
 
     modifier onlyVaultOwner() {
-        if (msg.sender != AMET_VAULT) revert OnlyVAULTOwner();
+        require(msg.sender == AMET_VAULT);
         _;
     }
 
