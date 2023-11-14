@@ -244,11 +244,3 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         return string.concat(_uri, Strings.toHexString(address(this)), ".json");
     }
 }
-
-//@audit import files with {} - done
-//@audit Use custom errors instead of require statements - done
-//@audit missing event emission on setter functions - done
-//@audit use stable pragma statement
-//@audit Filename and contract name mismatch - done
-//@audit use ++index instead of index++, as well as don't initialise index to 0 - done
-//@audit include NatSpec especially for the external functions
