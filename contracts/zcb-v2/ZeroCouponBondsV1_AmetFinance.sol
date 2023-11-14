@@ -5,7 +5,6 @@ import {ERC721, Strings} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
     error OnlyOwner();
-    error OnlyVAULTOwner();
     error InvalidOperation();
 
 contract ZeroCouponBondsV1_AmetFinance is ERC721 {
@@ -35,17 +34,17 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
     modifier onlyIssuer() {
-        require(msg.sender == issuer);
+        require(msg.sender == issuer, "Invalid Issuer");
         _;
     }
 
     modifier onlyVaultOwner() {
-        require(msg.sender == AMET_VAULT);
+        require(msg.sender == AMET_VAULT, "Invalid Owner");
         _;
     }
 
     modifier isNotZeroAddress(address _customAddress) {
-        if (_customAddress == address(0)) revert InvalidOperation();
+        require(_customAddress != address(0), "Invalid Address");
         _;
     }
 
