@@ -26,6 +26,8 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
         creationFee = _creationFee;
     }
 
+    receive() external payable {}
+
     function create(
         uint256 _total,
         uint256 _redeemLockPeriod,

@@ -14,27 +14,27 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     address public AMET_VAULT;
     string private _uri = "https://storage.amet.finance/contracts/";
 
-    address private issuer; // Bonds issuer coupon
+    address private _issuer; // Bonds _issuer coupon
 
-    uint256 private total; // The amount of the bonds that can be issued(maximum)
-    uint256 private purchased; // The amount of bonds that were already purchased
-    uint256 private redeemed; // The amount of bonds already redeemed
+    uint256 private _total; // The amount of the bonds that can be issued(maximum)
+    uint256 private _purchased; // The amount of bonds that were already _purchased
+    uint256 private _redeemed; // The amount of bonds already _redeemed
 
-    uint16 private feePercentage;
+    uint16 private _feePercentage;
 
-    uint256 private redeemLockPeriod; // Seconds after which user can redeem
-    uint256 private immutable issuanceDate; // The date when the contract was created
+    uint256 private _redeemLockPeriod; // Seconds after which user can redeem
+    uint256 private immutable _issuanceDate; // The date when the contract was created
 
-    address private immutable investmentToken; // Bond purchasing token
-    uint256 private immutable investmentTokenAmount; // Bond purchasing amount
+    address private immutable _investmentToken; // Bond purchasing token
+    uint256 private immutable _investmentTokenAmount; // Bond purchasing amount
 
-    address private immutable interestToken; // Bond return token
-    uint256 private immutable interestTokenAmount; // Bond return amount
+    address private immutable _interestToken; // Bond return token
+    uint256 private immutable _interestTokenAmount; // Bond return amount
 
     mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
     modifier onlyIssuer() {
-        require(msg.sender == issuer, "Invalid Issuer");
+        require(msg.sender == _issuer, "Invalid Issuer");
         _;
     }
 
@@ -43,8 +43,8 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         _;
     }
 
-    modifier isNotZeroAddress(address _customAddress) {
-        require(_customAddress != address(0), "Invalid Address");
+    modifier isNotZeroAddress(address customAddress) {
+        require(customAddress != address(0), "Invalid Address");
         _;
     }
 
@@ -58,42 +58,43 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     event DecreasedRedeemLockPeriod(uint256 newRedeemLockPeriod);
 
     constructor(
-        address _vault,
-        address _issuer,
-        uint256 _total,
-        uint256 _redeemLockPeriod,
-        address _investmentToken,
-        uint256 _investmentTokenAmount,
-        address _interestToken,
-        uint256 _interestTokenAmount,
-        uint16 _feePercentage,
-        string memory _denomination
-    ) ERC721(_denomination, "ZCB") {
-        AMET_VAULT = _vault;
-        issuer = _issuer;
-        total = _total;
-        redeemLockPeriod = _redeemLockPeriod;
+        address vault,
+        address issuer,
+        uint256 total,
+        uint256 redeemLockPeriod,
+        address investmentToken,
+        uint256 investmentTokenAmount,
+        address interestToken,
+        uint256 interestTokenAmount,
+        uint16 feePercentage,
+        string memory denomination
+    ) ERC721(denomination, "ZCB") {
+        AMET_VAULT = vault;
+        _issuer = issuer;
+        _total = total;
+        _redeemLockPeriod = redeemLockPeriod;
 
-        investmentToken = _investmentToken;
-        investmentTokenAmount = _investmentTokenAmount;
+        _investmentToken = investmentToken;
+        _investmentTokenAmount = investmentTokenAmount;
 
-        interestToken = _interestToken;
-        interestTokenAmount = _interestTokenAmount;
-        feePercentage = _feePercentage;
-        issuanceDate = block.timestamp;
+        _interestToken = interestToken;
+        _interestTokenAmount = interestTokenAmount;
+
+        _feePercentage = feePercentage;
+        _issuanceDate = block.timestamp;
     }
 
     //    ==== VAULT owner functions ====
 
-    function changeVaultAddress(address _newAddress) external onlyVaultOwner isNotZeroAddress(_newAddress) {
-        emit ChangeVaultAddress(AMET_VAULT, _newAddress);
-        AMET_VAULT = _newAddress;
+    function changeVaultAddress(address newVaultAddress) external onlyVaultOwner isNotZeroAddress(newVaultAddress) {
+        emit ChangeVaultAddress(AMET_VAULT, newVaultAddress);
+        AMET_VAULT = newVaultAddress;
     }
 
     function decreaseFeePercentage(uint16 percentage) external onlyVaultOwner {
-        if (percentage >= feePercentage) revert InvalidOperation();
-        emit ChangeFeePercentage(feePercentage, percentage);
-        feePercentage = percentage;
+        if (percentage >= _feePercentage) revert InvalidOperation();
+        emit ChangeFeePercentage(_feePercentage, percentage);
+        _feePercentage = percentage;
     }
 
     function changeBaseURI(string memory uri) external onlyVaultOwner {
@@ -104,34 +105,34 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     // ==== Issuer functions ====
     function decreaseRedeemLockPeriod(uint256 _newRedeemLockPeriod) external onlyIssuer {
-        if (_newRedeemLockPeriod >= redeemLockPeriod) revert InvalidOperation();
-        redeemLockPeriod = _newRedeemLockPeriod;
+        if (_newRedeemLockPeriod >= _redeemLockPeriod) revert InvalidOperation();
+        _redeemLockPeriod = _newRedeemLockPeriod;
         emit DecreasedRedeemLockPeriod(_newRedeemLockPeriod);
     }
 
     function changeOwner(address _newAddress) external onlyIssuer isNotZeroAddress(_newAddress) {
-        issuer = _newAddress;
+        _issuer = _newAddress;
         emit ChangeOwner(msg.sender, _newAddress);
     }
 
     function issueBonds(uint256 count) external onlyIssuer {
-        total = total + count;
+        _total = _total + count;
         emit BondsIssued(count);
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
-        uint256 newTotal = total - count;
-        if (purchased > newTotal) revert InvalidOperation();
+        uint256 newTotal = _total - count;
+        if (_purchased > newTotal) revert InvalidOperation();
 
-        total = newTotal;
+        _total = newTotal;
         emit BondsBurnt(count);
     }
 
     function withdrawRemaining() external onlyIssuer {
-        uint256 balance = IERC20(interestToken).balanceOf(address(this));
-        uint256 totalNeeded = (total - redeemed) * interestTokenAmount;
+        uint256 balance = IERC20(_interestToken).balanceOf(address(this));
+        uint256 totalNeeded = (_total - _redeemed) * _interestTokenAmount;
         if (balance > totalNeeded) {
-            IERC20(interestToken).safeTransfer(issuer, balance - totalNeeded);
+            IERC20(_interestToken).safeTransfer(_issuer, balance - totalNeeded);
         }
     }
     // ========
@@ -139,30 +140,30 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     // ==== Investor functions ====
 
     function purchase(uint256 count) external {
-        if (purchased + count > total) revert InvalidOperation();
-        uint256 totalPurchased = count * investmentTokenAmount;
+        if (_purchased + count > _total) revert InvalidOperation();
+        uint256 totalPurchased = count * _investmentTokenAmount;
 
         for (uint256 index; index < count;) {
-            uint256 tokenId = purchased + index;
+            uint256 tokenId = _purchased + index;
             _mint(msg.sender, tokenId);
             _purchaseDates[tokenId] = block.timestamp;
             unchecked {++index;}
         }
 
-        unchecked {purchased = purchased + count;}
+        unchecked {_purchased = _purchased + count;}
 
-        uint256 totalFees = totalPurchased * feePercentage / 1000;
-        IERC20 investment = IERC20(investmentToken);
+        uint256 totalFees = totalPurchased * _feePercentage / 1000;
+        IERC20 investment = IERC20(_investmentToken);
         investment.safeTransferFrom(msg.sender, AMET_VAULT, totalFees);
-        investment.safeTransferFrom(msg.sender, issuer, totalPurchased - totalFees);
+        investment.safeTransferFrom(msg.sender, _issuer, totalPurchased - totalFees);
     }
 
     function redeem(uint256[] calldata tokenIds) external {
         uint256 length = tokenIds.length;
-        uint256 totalRedemption = interestTokenAmount * length;
-        uint256 redeemLeft = block.timestamp - redeemLockPeriod;
+        uint256 totalRedemption = _interestTokenAmount * length;
+        uint256 redeemLeft = block.timestamp - _redeemLockPeriod;
 
-        IERC20 interest = IERC20(interestToken);
+        IERC20 interest = IERC20(_interestToken);
         uint256 contractInterestBalance = interest.balanceOf(address(this));
 
         if (totalRedemption > contractInterestBalance) revert InvalidOperation();
@@ -178,7 +179,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
             unchecked {++index;}
         }
 
-        unchecked {redeemed = redeemed + length;}
+        unchecked {_redeemed = _redeemed + length;}
 
         interest.safeTransfer(msg.sender, totalRedemption);
     }
@@ -205,17 +206,17 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     )
     {
         return (
-            issuer,
-            total,
-            purchased,
-            redeemed,
-            redeemLockPeriod,
-            investmentToken,
-            investmentTokenAmount,
-            interestToken,
-            interestTokenAmount,
-            feePercentage,
-            issuanceDate
+            _issuer,
+            _total,
+            _purchased,
+            _redeemed,
+            _redeemLockPeriod,
+            _investmentToken,
+            _investmentTokenAmount,
+            _interestToken,
+            _interestTokenAmount,
+            _feePercentage,
+            _issuanceDate
         );
     }
 
@@ -230,8 +231,8 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         return purchaseDates;
     }
 
-    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
-        _requireOwned(_tokenId);
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireOwned(tokenId);
         return string.concat(_uri, Strings.toHexString(address(this)), ".json");
     }
 }
