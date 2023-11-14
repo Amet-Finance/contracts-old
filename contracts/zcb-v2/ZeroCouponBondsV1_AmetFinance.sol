@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity 0.8.22;
 
 import {ERC721, Strings} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -23,13 +23,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     uint16 private feePercentage;
 
     uint256 private redeemLockPeriod; // Seconds after which user can redeem
-    uint256 private issuanceDate; // The date when the contract was created
+    uint256 private immutable issuanceDate; // The date when the contract was created
 
-    address private investmentToken; // Bond purchasing token
-    uint256 private investmentTokenAmount; // Bond purchasing amount
+    address private immutable investmentToken; // Bond purchasing token
+    uint256 private immutable investmentTokenAmount; // Bond purchasing amount
 
-    address private interestToken; // Bond return token
-    uint256 private interestTokenAmount; // Bond return amount
+    address private immutable interestToken; // Bond return token
+    uint256 private immutable interestTokenAmount; // Bond return amount
 
     mapping(uint256 tokenId => uint256) private _purchaseDates; // Bond purchase date
 
@@ -91,7 +91,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function decreaseFeePercentage(uint16 percentage) external onlyVaultOwner {
-        if (percentage > feePercentage) revert InvalidOperation();
+        if (percentage >= feePercentage) revert InvalidOperation();
         emit ChangeFeePercentage(feePercentage, percentage);
         feePercentage = percentage;
     }
@@ -104,7 +104,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
 
     // ==== Issuer functions ====
     function decreaseRedeemLockPeriod(uint256 _newRedeemLockPeriod) external onlyIssuer {
-        if (_newRedeemLockPeriod > redeemLockPeriod) revert InvalidOperation();
+        if (_newRedeemLockPeriod >= redeemLockPeriod) revert InvalidOperation();
         redeemLockPeriod = _newRedeemLockPeriod;
         emit DecreasedRedeemLockPeriod(_newRedeemLockPeriod);
     }
@@ -120,9 +120,10 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
-        if (total - count < purchased) revert InvalidOperation();
+        uint256 newTotal = total - count;
+        if (purchased > newTotal) revert InvalidOperation();
 
-        total = total - count;
+        total = newTotal;
         emit BondsBurnt(count);
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18; // todo remember to change the advanced evm version to shanghai
+pragma solidity 0.8.22; // todo remember to change the advanced evm version to shanghai
 
 import {ZeroCouponBondsV1_AmetFinance} from "./ZeroCouponBondsV1_AmetFinance.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -35,7 +35,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
         uint256 _interestTokenAmount,
         string memory _name
     ) external payable {
-        if (msg.value < creationFee) revert CreationFeeMissing();
+        if (creationFee > msg.value) revert CreationFeeMissing();
         if (isPaused == true) revert ContractPaused();
 
         ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
