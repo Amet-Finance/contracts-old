@@ -18,6 +18,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
     // @notice the percentage will be divided to 10
     uint16 public creationFeePercentage;
 
+    event PauseState(bool isPaused);
     event Create(address indexed issuer, address indexed contractAddress);
     event ChangeFee(uint256 from, uint256 to);
 
@@ -73,6 +74,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
     }
 
     function changePauseState(bool _pause) external onlyOwner {
+        emit PauseState(_pause);
         isPaused = _pause;
     }
 }

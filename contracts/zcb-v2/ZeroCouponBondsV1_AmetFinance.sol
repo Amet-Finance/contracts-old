@@ -51,10 +51,12 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     event ChangeOwner(address oldAddress, address newAddress);
     event ChangeVaultAddress(address oldAddress, address newAddress);
 
+    event ChangeBaseURI(string uri);
     event ChangeFeePercentage(uint16 oldFeePercentage, uint16 newFeePercentage);
 
     event BondsIssued(uint256 count);
     event BondsBurnt(uint256 count);
+    event WithdrawRemaining(uint256 amount);
     event DecreasedRedeemLockPeriod(uint256 newRedeemLockPeriod);
 
     constructor(
@@ -98,6 +100,7 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function changeBaseURI(string memory uri) external onlyVaultOwner {
+        emit ChangeBaseURI(uri);
         _uri = uri;
     }
 
@@ -106,8 +109,8 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     // ==== Issuer functions ====
     function decreaseRedeemLockPeriod(uint256 _newRedeemLockPeriod) external onlyIssuer {
         if (_newRedeemLockPeriod >= _redeemLockPeriod) revert InvalidOperation();
-        _redeemLockPeriod = _newRedeemLockPeriod;
         emit DecreasedRedeemLockPeriod(_newRedeemLockPeriod);
+        _redeemLockPeriod = _newRedeemLockPeriod;
     }
 
     function changeOwner(address _newAddress) external onlyIssuer isNotZeroAddress(_newAddress) {
@@ -116,8 +119,8 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function issueBonds(uint256 count) external onlyIssuer {
-        _total = _total + count;
         emit BondsIssued(count);
+        _total = _total + count;
     }
 
     function burnUnsoldBonds(uint256 count) external onlyIssuer {
@@ -129,11 +132,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
     }
 
     function withdrawRemaining() external onlyIssuer {
-        uint256 balance = IERC20(_interestToken).balanceOf(address(this));
-        uint256 totalNeeded = (_total - _redeemed) * _interestTokenAmount;
-        if (balance > totalNeeded) {
-            IERC20(_interestToken).safeTransfer(_issuer, balance - totalNeeded);
-        }
+        uint256 balance = IERC20(_interestToken).balanceOf(address(this)); // 1100
+        uint256 totalNeeded = (_total - _redeemed) * _interestTokenAmount; // 1100
+        if (totalNeeded >= balance) revert InvalidOperation();
+
+        uint256 transferAmount = balance - totalNeeded;
+        IERC20(_interestToken).safeTransfer(_issuer, transferAmount);
+        emit WithdrawRemaining(transferAmount);
     }
     // ========
 
