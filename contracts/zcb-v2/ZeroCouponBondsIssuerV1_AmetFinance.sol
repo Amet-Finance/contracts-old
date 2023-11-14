@@ -36,7 +36,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
         string memory _name
     ) external payable {
         if (creationFee > msg.value) revert CreationFeeMissing();
-        if (isPaused == true) revert ContractPaused();
+        if (isPaused) revert ContractPaused();
 
         ZeroCouponBondsV1_AmetFinance bonds = new ZeroCouponBondsV1_AmetFinance(
             owner(),
