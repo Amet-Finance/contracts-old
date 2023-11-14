@@ -20,7 +20,7 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
 
     event PauseState(bool isPaused);
     event Create(address indexed issuer, address indexed contractAddress);
-    event ChangeFee(uint256 from, uint256 to);
+    event ChangeFee(uint256 fee, bool isPercentage);
 
     constructor(uint16 _creationFeePercentage, uint256 _creationFee) Ownable(msg.sender) {
         creationFeePercentage = _creationFeePercentage;
@@ -61,13 +61,13 @@ contract ZeroCouponBondsIssuerV1_AmetFinance is Ownable {
         require(sent, "Failed to send Ether");
     }
 
-    function changeCreationFee(uint256 percent) external onlyOwner {
-        emit ChangeFee(creationFee, percent);
-        creationFee = percent;
+    function changeCreationFee(uint256 amount) external onlyOwner {
+        emit ChangeFee(amount, false);
+        creationFee = amount;
     }
 
     function changeCreationFeePercentage(uint16 percent) external onlyOwner {
-        emit ChangeFee(creationFeePercentage, percent);
+        emit ChangeFee(percent, true);
         creationFeePercentage = percent;
     }
 
