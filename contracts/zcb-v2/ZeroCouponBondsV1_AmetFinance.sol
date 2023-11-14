@@ -84,10 +84,6 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         issuanceDate = block.timestamp;
     }
 
-    function tokenURI() public view returns (string memory) {
-        return string.concat(_uri, Strings.toHexString(address(this)), ".json");
-    }
-
     //    ==== VAULT owner functions ====
 
     function changeVaultAddress(address _newAddress) external onlyVaultOwner isNotZeroAddress(_newAddress) {
@@ -95,12 +91,13 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
         AMET_VAULT = _newAddress;
     }
 
-    function changeFeePercentage(uint16 percentage) external onlyVaultOwner {
+    function decreaseFeePercentage(uint16 percentage) external onlyVaultOwner {
+        if (percentage > feePercentage) revert InvalidOperation();
         emit ChangeFeePercentage(feePercentage, percentage);
         feePercentage = percentage;
     }
 
-    function changeTokenURI(string memory uri) external onlyVaultOwner {
+    function changeBaseURI(string memory uri) external onlyVaultOwner {
         _uri = uri;
     }
 
@@ -137,7 +134,6 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
             IERC20(interestToken).safeTransfer(issuer, balance - totalNeeded);
         }
     }
-
     // ========
 
     // ==== Investor functions ====
@@ -232,6 +228,11 @@ contract ZeroCouponBondsV1_AmetFinance is ERC721 {
             unchecked {++id;}
         }
         return purchaseDates;
+    }
+
+    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+        _requireOwned(_tokenId);
+        return string.concat(_uri, Strings.toHexString(address(this)), ".json");
     }
 }
 

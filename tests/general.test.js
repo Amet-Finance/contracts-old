@@ -60,11 +60,6 @@ function getTokenContract(type = "USDC") {
 
 async function submitTransaction({data, value, privateKey, toAddress}) {
     const web3 = getWeb3();
-    // const block = await web3.eth.getBlock("latest")
-    // await ganache.send("evm_mine", [{
-    //     timestamp: block.timestamp + 10,
-    //     blocks: block.number + 1
-    // }]); // skips the timestamp to lockPeriod + 1 seconds
     const account = web3.eth.accounts.privateKeyToAccount(privateKey);
     web3.eth.handleRevert = true
 
@@ -125,17 +120,17 @@ async function sleep(ms) {
 
 /**
  @description The tests below check for the methods blow, which are under issuer contract
-  "changeCreationFee(uint256)",
-  "changeCreationFeePercentage(uint16)",
-  "changePauseState(bool)",
-  "create(uint256,uint256,address,uint256,address,uint256,string)",
-  "[VIEW]creationFee()",
-  "[VIEW]creationFeePercentage()",
-  "[VIEW]isPaused()",
-  "[VIEW]owner()",
-  "renounceOwnership()" ~ not checked, no need,
-  "transferOwnership(address)",
-  "withdraw(address,uint256)"
+  'changeCreationFee(uint256)',
+  'changeCreationFeePercentage(uint16)',
+  'changePauseState(bool)',
+  'create(uint256,uint256,address,uint256,address,uint256,string)',
+  'creationFee()',
+  'creationFeePercentage()',
+  'isPaused()',
+  'owner()',
+  'renounceOwnership()',
+  'transferOwnership(address)',
+  'withdraw(address,uint256)'
  **/
 describe("Testing the ZCB issuer", () => {
 
@@ -166,6 +161,9 @@ describe("Testing the ZCB issuer", () => {
 
         constants.USDT = usdtContract.contractAddress
         constants.USDC = usdcContract.contractAddress
+
+        console.log(Object.keys(getIssuerContract().methods).filter(item => !item.startsWith("0x") && item.includes("(")))
+        console.log(Object.keys(getZcbContract().methods).filter(item => !item.startsWith("0x") && item.includes("(")))
     });
 
     test.failing('changeCreationFee| Wrong wallet', async () => {
@@ -198,7 +196,7 @@ describe("Testing the ZCB issuer", () => {
             data: contract.methods.changeCreationFeePercentage(constants.changedFeePercentage).encodeABI(),
             privateKey: constants.OwnerPK
         })
-    }) // fee percentage is 10%
+    })
 
     test.failing('changeIssuer| Wrong wallet', async () => {
         const contract = getIssuerContract();
@@ -372,45 +370,62 @@ describe("Testing the ZCB issuer", () => {
     })
 })
 
+
+async function submitTransactionForZCB({data, privateKey, toAddress}) {
+    await submitTransaction({
+        data,
+        toAddress: toAddress || constants.bondInfoLocal.id,
+        privateKey: privateKey || constants.OwnerPK
+    })
+}
+
 describe("Testing the ZCB", () => {
+
     // Starting from here goes checks for the ZCB
-    // Get
+    //     'AMET_VAULT()',--- done
+    //     'name()',--- done
+    //     'symbol()',--- done
+    //     'tokenURI(uint256)', --- done
 
-    // "AMET_VAULT()"
-    // "balanceOf(address)",
-    // "getInfo()",
-    // "getTokenInfo(uint256)",
-    // "getTokensPurchaseDates(uint256[])",
-    // "isApprovedForAll(address,address)",
-    // "name()"
-    // "ownerOf(uint256)"
-    // "supportsInterface(bytes4)"
-    // "symbol()"
-    // "tokenURI(uint256)"
 
-    // "redeem(uint256[])"
-    // "approve(address,uint256)",
-    // "burnUnsoldBonds(uint256)",
-    // "changeFeePercentage(uint16)",
-    // "changeOwner(address)",
-    // "changeTokenURI(string)",
-    // "changeVaultAddress(address)",
-    // "getApproved(uint256)",
-    // "issueBonds(uint256)",
-    // "safeTransferFrom(address,address,uint256)"
-    // "safeTransferFrom(address,address,uint256,bytes)"
-    // "setApprovalForAll(address,bool)",
-    // "transferFrom(address,address,uint256)"
-    // "withdrawRemaining()
+    // Vault functions
+    //     'changeBaseURI(string)', --- done
+    //     'changeVaultAddress(address)', --- done
+    //     'decreaseFeePercentage(uint16)', --- done
+
+
+    // owner functions
+    //     'withdrawRemaining()'
+    //     'burnUnsoldBonds(uint256)',
+    //     'changeOwner(address)',
+    //     'issueBonds(uint256)',
+    //     'decreaseRedeemLockPeriod(uint256)', --- done
+
+
+    // User functions
+    //     'approve(address,uint256)', -- OZ function
+    //     'purchase(uint256)', --- done
+    //     'redeem(uint256[])', --- done
+    //     'safeTransferFrom(address,address,uint256)', -- OZ function
+    //     'safeTransferFrom(address,address,uint256,bytes)', -- OZ function
+    //     'setApprovalForAll(address,bool)', -- OZ function
+    //     'supportsInterface(bytes4)', -- OZ function
+    //     'transferFrom(address,address,uint256)', -- OZ function
+
+    // Read-Only functions
+    //     'balanceOf(address)' -- done,
+    //     'getApproved(uint256)',
+    //     'getInfo()',
+    //     'getTokensPurchaseDates(uint256[])',
+    //     'isApprovedForAll(address,address)',
+    //     'ownerOf(uint256)', --- done
 
 
     test.failing('Purchase| Wrong approval', async () => {
         const contract = getZcbContract();
 
-        await submitTransaction({
-            data: contract.methods.purchase(10).encodeABI(),
-            toAddress: constants.bondInfoLocal.id,
-            privateKey: constants.OwnerPK
+        await submitTransactionForZCB({
+            data: contract.methods.purchase(10).encodeABI()
         })
     })
 
@@ -462,7 +477,7 @@ describe("Testing the ZCB", () => {
         const type = constants.bondInfoLocal.investment
         const tokenContract = getTokenContract();
 
-        const amount = constants.purchaseAmount
+        const amount = constants.bondInfoLocal.total
         const value = toBN(amount).mul(toBN(constants.bondInfoLocal.investmentTokenAmount))
 
         await submitTransaction({
@@ -483,6 +498,126 @@ describe("Testing the ZCB", () => {
         })
     })
 
+
+    test('Balance && Owner| Correct', async () => {
+
+        const contract = getZcbContract();
+        const account = getWeb3().eth.accounts.privateKeyToAccount(constants.OwnerPK);
+        const account1 = getWeb3().eth.accounts.privateKeyToAccount(constants.RandomPK3);
+
+        const balance = await contract.methods.balanceOf(account.address).call()
+        const balance1 = await contract.methods.balanceOf(account1.address).call()
+
+        const owner = await contract.methods.ownerOf(0).call()
+
+        expect(Number(balance)).toBe(constants.bondInfoLocal.total)
+        expect(Number(balance1)).toBe(0)
+
+        expect(owner.toLowerCase()).toBe(account.address.toLowerCase());
+    })
+
+
+    test("Checking VAULT && name && symbol && tokenURI", async () => {
+        const contract = getZcbContract();
+        const ownerAccount = getWeb3().eth.accounts.privateKeyToAccount(constants.OwnerPK);
+
+        const AMET_VAULT = await contract.methods.AMET_VAULT().call();
+        const name = await contract.methods.name().call()
+        const symbol = await contract.methods.symbol().call()
+        const tokenURI = await contract.methods.tokenURI(0).call()
+
+        expect(AMET_VAULT.toLowerCase()).toBe(ownerAccount.address.toLowerCase());
+        expect(name).toBe(`${constants.bondInfoLocal.investment}-${constants.bondInfoLocal.interest}| Amet Finance`)
+        expect(symbol).toBe("ZCB")
+        expect(tokenURI).toBe(`https://storage.amet.finance/contracts/${constants.bondInfoLocal.id.toLowerCase()}.json`)
+    })
+
+
+    test.failing("Change token URI| Wrong address", async () => {
+        const contract = getZcbContract();
+        await submitTransactionForZCB({
+            data: contract.methods.changeTokenURI(""),
+            privateKey: constants.RandomPK1
+        })
+    })
+
+    test("Change token URI| Correct address", async () => {
+        const contract = getZcbContract();
+        const storageUrl = `https://storage.amet.finance/contracts/`
+        await submitTransactionForZCB({
+            data: contract.methods.changeBaseURI("").encodeABI(),
+        })
+
+        const tokenURI = await contract.methods.tokenURI(0).call()
+        expect(tokenURI).toBe(`${constants.bondInfoLocal.id.toLowerCase()}.json`)
+        await submitTransactionForZCB({
+            data: contract.methods.changeBaseURI(storageUrl).encodeABI(),
+        })
+        const tokenURIUpdated = await contract.methods.tokenURI(0).call()
+        expect(tokenURIUpdated).toBe(`${storageUrl}${constants.bondInfoLocal.id.toLowerCase()}.json`)
+    })
+
+
+    test.failing("Change VAULT| Wrong address", async () => {
+        const contract = getZcbContract();
+        await submitTransactionForZCB({
+            data: contract.methods.changeVaultAddress(getWeb3().eth.accounts.create().address).encodeABI(),
+            privateKey: constants.RandomPK1
+        })
+    })
+
+    test("Change VAULT| Correct address", async () => {
+        const contract = getZcbContract();
+
+        const ownerAccount = getWeb3().eth.accounts.privateKeyToAccount(constants.OwnerPK);
+        const accountRandom5 = getWeb3().eth.accounts.privateKeyToAccount(constants.RandomPK5);
+
+        await submitTransactionForZCB({
+            data: contract.methods.changeVaultAddress(accountRandom5.address).encodeABI(),
+            privateKey: constants.OwnerPK
+        })
+
+        const newOwner = await contract.methods.AMET_VAULT().call()
+        expect(newOwner.toLowerCase()).toBe(accountRandom5.address.toLowerCase());
+
+        await submitTransactionForZCB({
+            data: contract.methods.changeVaultAddress(ownerAccount.address).encodeABI(),
+            privateKey: accountRandom5.privateKey
+        })
+
+        const defaultOwner = await contract.methods.AMET_VAULT().call()
+        expect(defaultOwner.toLowerCase()).toBe(ownerAccount.address.toLowerCase());
+    })
+
+
+    test.failing("Decrease Fee Percentage| Wrong address", async () => {
+        const contract = getZcbContract();
+        await submitTransactionForZCB({
+            data: contract.methods.decreaseFeePercentage(Number(constants.changedFeePercentage) - 2).encodeABI(),
+            privateKey: constants.RandomPK2
+        })
+    })
+
+    test.failing("Decrease Fee Percentage| Wrong amount", async () => {
+        const contract = getZcbContract();
+        await submitTransactionForZCB({
+            data: contract.methods.decreaseFeePercentage(Number(constants.changedFeePercentage) + 10).encodeABI(),
+            privateKey: constants.OwnerPK
+        })
+    })
+
+    test("Decrease Fee Percentage| Correct", async () => {
+        const contract = getZcbContract();
+        await submitTransactionForZCB({
+            data: contract.methods.decreaseFeePercentage(Number(constants.changedFeePercentage) - 10).encodeABI(),
+            privateKey: constants.OwnerPK
+        })
+
+        const contractInfo = await contract.methods.getInfo().call();
+        expect(Number(contractInfo[9])).toBe(Number(constants.changedFeePercentage) - 10);
+    })
+
+
     test('Deposit to ZCB', async () => {
         const type = constants.bondInfoLocal.interest
         const tokenContract = getTokenContract(type);
@@ -495,6 +630,7 @@ describe("Testing the ZCB", () => {
             privateKey: constants.OwnerPK
         })
     })
+
 
     test.failing('Redeem| Wrong time', async () => {
         const contract = getZcbContract();
@@ -533,7 +669,7 @@ describe("Testing the ZCB", () => {
         const contract = getZcbContract();
 
         await submitTransaction({
-            data: contract.methods.redeem([0]).encodeABI(),
+            data: contract.methods.redeem([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).encodeABI(),
             toAddress: constants.bondInfoLocal.id,
             privateKey: constants.OwnerPK
         }).catch(error => {
@@ -549,7 +685,7 @@ describe("Testing the ZCB", () => {
         const contract = getZcbContract();
 
         await submitTransaction({
-            data: contract.methods.decreaseRedeemLockPeriod(12).encodeABI(),
+            data: contract.methods.decreaseRedeemLockPeriod(constants.bondInfoLocal.redeemLockPeriod + 10).encodeABI(),
             toAddress: constants.bondInfoLocal.id,
             privateKey: constants.RandomPK3
         }).catch(error => {
@@ -562,10 +698,9 @@ describe("Testing the ZCB", () => {
         const web3 = getWeb3()
 
         const contract = getZcbContract();
-        const newLockPeriod = 3
 
         await submitTransaction({
-            data: contract.methods.decreaseRedeemLockPeriod(newLockPeriod).encodeABI(),
+            data: contract.methods.decreaseRedeemLockPeriod(constants.bondInfoLocal.redeemLockPeriod - 1).encodeABI(),
             toAddress: constants.bondInfoLocal.id,
             privateKey: constants.RandomPK3
         }).catch(error => {
@@ -573,6 +708,6 @@ describe("Testing the ZCB", () => {
             throw Error(error)
         })
 
-        constants.bondInfoLocal.redeemLockPeriod = newLockPeriod;
+        constants.bondInfoLocal.redeemLockPeriod = constants.bondInfoLocal.redeemLockPeriod - 1;
     })
 })
