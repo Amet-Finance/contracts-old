@@ -642,7 +642,7 @@ describe("Testing the ZCB", () => {
         })
     })
 
-    test.failing('Redeem| Wrong id', async () => {
+    test.failing('Redeem| Wrong token id', async () => {
         const contract = getZcbContract();
         const web3 = getWeb3()
         const block = await web3.eth.getBlock("latest")
@@ -650,6 +650,26 @@ describe("Testing the ZCB", () => {
 
         await submitTransaction({
             data: contract.methods.redeem([150]).encodeABI(),
+            toAddress: constants.bondInfoLocal.id,
+            privateKey: constants.OwnerPK
+        }).catch(error => {
+            console.log(error)
+            throw Error(error)
+        })
+    })
+
+    test.failing('Redeem| Wrong same token Id', async () => {
+        const web3 = getWeb3()
+        const block = await web3.eth.getBlock("latest")
+        await ganache.send("evm_mine", [{
+            timestamp: block.timestamp + constants.bondInfoLocal.redeemLockPeriod + 20,
+            blocks: block.number + 2000
+        }]); // skips the timestamp to lockPeriod + 1 seconds
+
+        const contract = getZcbContract();
+
+        await submitTransaction({
+            data: contract.methods.redeem([0, 0]).encodeABI(),
             toAddress: constants.bondInfoLocal.id,
             privateKey: constants.OwnerPK
         }).catch(error => {

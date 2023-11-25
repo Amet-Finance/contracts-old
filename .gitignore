@@ -1,5 +1,5 @@
 node_modules
 .idea
-contracts/zcb-v2/artefacts/zcb-issuer
+contracts/zcb-v1/artefacts/zcb-issuer
 cache
 .DS_Store
